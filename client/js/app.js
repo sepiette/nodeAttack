@@ -99,7 +99,7 @@ window.onload = function(){
 			var node = {
 				x: w,
 				y: h,
-				radius: 15,
+				radius: 20,
 				fillColor: '#e34651'
 				// fillColor: nodeColors[Math.floor(Math.random()*nodeColors.length)]
 			};
