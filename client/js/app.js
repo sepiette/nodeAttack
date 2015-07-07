@@ -1,3 +1,5 @@
+// var io = require('socket.io-client');
+
 var canvas = document.getElementById('grid');
 var graph = canvas.getContext("2d");
 
@@ -16,31 +18,21 @@ window.onload = function(){
 	var xoffset = -gameWidth;
 	var yoffset = -gameHeight;
 
-	//default node
-	var nodeConfig = {
-		border: 0,
-		fillColor:'#f1c4ff',
-		defaultSize: 10,
-		borderColor: '#f1c4ff'
-	};
-
-
-
 	var nodes = [];
 	var players =[];
 
-	
 
 	//draw circle function
-	function drawCircle(centerX, centerY, radius, sides){
+	function drawCircle(centerX, centerY, radius){
 		var theta = 0;
 		var x =0;
 		var y=0;
+		nVerts = 30;
 
 		graph.beginPath();
 
-		for(var i = 0; i < sides; i++){
-			theta = (i/sides) * 2 * Math.PI;
+		for(var i = 0; i < nVerts; i++){
+			theta = (i/nVerts) * 2 * Math.PI;
 			x = centerX + radius * Math.sin(theta);
 			y = centerY + radius * Math.cos(theta);
 			graph.lineTo(x, y);
@@ -51,16 +43,15 @@ window.onload = function(){
 		graph.fill();
 	}
 
+	//draw nodes function
 	function drawNodes(node){
-			graph.strokeStyle = node.fillColor || nodeConfig.borderColor;
-			graph.fillStyle = node.fillColor || nodeConfig.fillColor;
-			graph.lineWidth = nodeConfig.border;
-			
-			drawCircle(node.x, node.y, (node.radius || 10) , 30);
-			
+			graph.strokeStyle = node.fillColor ;
+			graph.fillStyle = node.fillColor;
+			graph.lineWidth = 0;
+			drawCircle(node.x, node.y, (node.radius));			
 	}
 
-	//draw grid
+	//draw grid function
 	function drawGrid(){
 		graph.lineWidth = 1;
 		graph.strokeStyle = '#000';
@@ -81,27 +72,75 @@ window.onload = function(){
 	    graph.globalAlpha = 1;
 
 	}
+	
+	//euclidean algorithm function
+	function euclidDistance(p1, p2){
+		return Math.sqrt(Math.pow(p2.x - p1.x,2) + Math.pow(p2.y-p1.y,2));
+	}
 
+	//highlight circle function
+	function highlightClickedCircle(index){
+		var node = {
+				x: nodes[index].x,
+				y: nodes[index].y,
+				radius: nodes[index].radius,
+				fillColor: '#5df4b7'
+		};
+		drawNodes(node);
+		nodes[index] = node;
+	}
+
+	//draw grid
 	drawGrid();
 
+	//draw nodes on grid
+	for(var w = 4*(height/ 18); w < width; w+=height/ 9){
+		for(var h=4*(height/ 18); h < height; h+= height / 9){
+			var node = {
+				x: w,
+				y: h,
+				radius: 15,
+				fillColor: '#e34651'
+				// fillColor: nodeColors[Math.floor(Math.random()*nodeColors.length)]
+			};
+			nodes.push(node);
+			drawNodes(node);
+		}
+	}
 
 	var canvasPos = {
 		x: canvas.offsetLeft,
 		y: canvas.offsetTop
-	}
+	};
 
-	c.on('click', function(e){
-
-		var node = {
+	window.onmousedown = function(e){
+		var mouse = {
 			x: e.pageX - canvasPos.x,
-			y: e.pageY - canvasPos.y,
-			radius: (Math.floor(Math.random() * (50-10)+10) + 1),
-			fillColor: nodeColors[Math.floor(Math.random()*nodeColors.length)]
+			y: e.pageY - canvasPos.y
 		};
-		nodes.push(node);
-		drawNodes(node);
-		console.log(nodes.length);
-	});
+		
+		var n = 0;
+		var hit = false;
+		while(!hit && n < nodes.length){
+
+			var center = {
+				x: nodes[n].x,
+				y: nodes[n].y
+			};
+
+			if(euclidDistance(mouse, center) < nodes[n].radius){
+				console.log('YAY!');
+				highlightClickedCircle(n);
+				hit = true;
+			}
+			else
+			{
+				n++;
+			}
+		}
+		
+		// console.log(nodes.length);
+	};
 
 //==================== end of window.onload	=======================//
 };
