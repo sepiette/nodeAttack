@@ -9,55 +9,99 @@ var playerNameInput = document.getElementById('playerNameInput');
 var socket;
 var KEY_ENTER = 13;
 var animLoopHandle;
-var spin = -Math.PI;
-var enemySpin = -Math.PI;
-var nodeColors = ['#5df4b7','#7b9ae4','#d12c7b','#e34651','#b4e53f','#3a0d3f','#b5b4d3','#4541ee','#58c8e0','#fc8d05'];
-
 
 function startGame(){
-	playerName = playerNameInput.value.replace(/(<([^>]+)>)/ig, '');
 	document.getElementById('startMenuWrapper').style.opacity = 0;
 	document.getElementById('gameAreaWrapper').style.opacity = 1;
 }
 // check if nick is valid alphanumeric characters (and underscores)
-function validNick() {
+function validName() {
     var regex = /^\w*$/;
     // debug('Regex Test', regex.exec(playerNameInput.value));
     return regex.exec(playerNameInput.value) !== null;
 }
+
 window.onload = function(){
 	
-	//start button to start game
-	var btn = document.getElementById('startButton'),
-        nickErrorText = document.querySelector('#startMenu .input-error');
-
-    btn.onclick = function () {
-
-        // check if the nick is valid
-        if (validNick()) {
-            nickErrorText.style.opacity = 0;
-            startGame();
-        } else {
-            nickErrorText.style.opacity = 1;
-        }
-    };
-
-
-	//canvas measurements
-	var width = 1000;
-	var height= 1000;
+//================= CANVAS VARS ===============//
+	var width = window.innerWidth;
+	var height= window.innerHeight;
 	var gameWidth = 0;
 	var gameHeight = 0;
 	var xoffset = -gameWidth;
 	var yoffset = -gameHeight;
 
+
+	var canvasPos = {
+		x: canvas.offsetLeft,
+		y: canvas.offsetTop
+	};
+
+//=============== GAME VARS =======================//
+	var btn = document.getElementById('startButton');
+    var nameErrorText = document.querySelector('#startMenu .input-error');
+	var gameStart = false;
+	var nodeColors = ['#5df4b7','#7b9ae4','#d12c7b','#b4e53f','#3a0d3f','#b5b4d3','#4541ee','#58c8e0','#fc8d05'];
+	
+	var playerConfig = {
+	    border: 6,
+	    textColor: '#FFFFFF',
+	    textBorder: '#000000',
+	    textBorderSize: 3,
+	    defaultSize: 30
+	};
+
+	var player = {
+		id: -1,
+		x: (width/2),
+		y: (height/2),
+		screenWidth: width,
+		screenHeight: height,
+		color: nodeColors[Math.floor(Math.random()*(nodeColors.length))]
+	};
+
+
+	var selectedNode = undefined;
 	var nodes = [];
 	var players =[];
+	var leaderboard = [];
+	var target = {x: player.x, y: player.y};
 
-	//event listeners
-	window.addEventListener('resize', resizeCanvas, false);
+//====================== Event Listeners =====================//
+	window.addEventListener('resize', redrawCanvas, false);
 
+	btn.onclick = function () {
 
+        if (validName()) {
+            nameErrorText.style.opacity = 0;
+            connectPlayer();
+        } else {
+            nameErrorText.style.opacity = 1;
+        }
+    };
+
+	window.onmousedown = function(e){
+		var mouse = {
+			x: e.pageX - canvasPos.x,
+			y: e.pageY - canvasPos.y
+		};
+		checkInCircle(mouse);
+	};
+//===================== CONNECT TO GAME FUNCTIONS ===============//
+	function connectPlayer(){
+		
+		player.id = Math.random()*10+1;
+		playerName = playerNameInput.value.replace(/(<([^>]+)>)/ig, '');
+		player.name = playerName;
+		player.screenWidth = width;
+		player.screenHeight = height;
+		player.target = target;
+		gameStart = true;
+		console.log(player);
+		startGame();
+	}
+
+//================== DRAWING FUNCTIONS ===================//
 	//draw circle function
 	function drawCircle(centerX, centerY, radius){
 		var theta = 0;
@@ -81,10 +125,10 @@ window.onload = function(){
 
 	//draw nodes function
 	function drawNodes(node){
-			graph.strokeStyle = node.fillColor ;
+			graph.strokeStyle = node.borderColor;
 			graph.fillStyle = node.fillColor;
-			graph.lineWidth = 0;
-			drawCircle(node.x, node.y, (node.radius));			
+			graph.lineWidth = node.border;
+			drawCircle(node.x, node.y, node.radius);			
 	}
 
 	//draw grid function
@@ -112,14 +156,15 @@ window.onload = function(){
 	function drawGridNodes(){
 		if(nodes.length ==0)
 		{
-			for(var w = 4*(height/ 18); w < width; w+=height/ 9){
-				for(var h=4*(height/ 18); h < height; h+= height / 9){
+			for(var w = (height/ 18); w < 8*(width/9); w+=height/ 9){
+				for(var h=(height/ 18); h < 8*(height/9); h+= height / 9){
 					var node = {
 						x: w,
 						y: h,
 						radius: 20,
-						fillColor: '#e34651'
-						// fillColor: nodeColors[Math.floor(Math.random()*nodeColors.length)]
+						fillColor: '#e34651',
+						borderColor: '#e34651',
+						border:8
 					};
 					nodes.push(node);
 					drawNodes(node);
@@ -135,11 +180,12 @@ window.onload = function(){
 		
 	}
 	//resize canvas
-	function resizeCanvas() {
-				graph.canvas.width = window.innerWidth;
-				graph.canvas.height = window.innerHeight;
-				// canvas.style.width = canvas.width + 'px';
-				// canvas.style.height = canvas.height + 'px';
+	function redrawCanvas() {
+				width = window.innerWidth;
+				height= window.innerHeight;
+				graph.canvas.width = width;
+				graph.canvas.height = height;
+
 				drawGrid();
 				drawGridNodes();
 	}
@@ -151,33 +197,47 @@ window.onload = function(){
 
 	//highlight circle function
 	function highlightClickedCircle(index){
-		var node = {
+		console.log(player.color);
+		var node;
+		if(selectedNode != undefined){
+			if(index != selectedNode.index){
+				node = {
+					x: nodes[index].x,
+					y: nodes[index].y,
+					radius: nodes[index].radius+(selectedNode.radius/2),
+					fillColor: player.color,
+					borderColor: player.color,
+					border: 8
+				};
+
+				selectedNode.radius = selectedNode.radius/2;
+
+				nodes[index] = node;
+				nodes[selectedNode.index] = selectedNode;
+
+				selectedNode = undefined;
+			}
+		}
+
+		else{
+			selectedNode = {
 				x: nodes[index].x,
 				y: nodes[index].y,
 				radius: nodes[index].radius,
-				fillColor: '#5df4b7'
-		};
-		drawNodes(node);
-		nodes[index] = node;
-	}
+				fillColor: player.color,
+				borderColor: player.color,
+				border: 8,
+				index: index
+			};
 
-	//draw grid for the first time
-	resizeCanvas();
-
-
-	
-
-	var canvasPos = {
-		x: canvas.offsetLeft,
-		y: canvas.offsetTop
-	};
-
-	window.onmousedown = function(e){
-		var mouse = {
-			x: e.pageX - canvasPos.x,
-			y: e.pageY - canvasPos.y
-		};
+			nodes[index] = selectedNode;
+		}
 		
+		// nodes[index] = node;
+		redrawCanvas();
+	}
+	//check to see if click in a circle function
+	function checkInCircle(mouse){
 		var n = 0;
 		var hit = false;
 		while(!hit && n < nodes.length){
@@ -196,11 +256,18 @@ window.onload = function(){
 			{
 				n++;
 			}
-		}
-		
-		// console.log(nodes.length);
-	};
+		}		
+	}
 
+//=================== GAME LOOP ================== //	
+	//draw grid for the first time
+function gameLoop(){
+
+	redrawCanvas();
+}
+	
+
+gameLoop();
 
 //==================== end of window.onload	=======================//
 };
