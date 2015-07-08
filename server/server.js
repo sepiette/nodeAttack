@@ -67,6 +67,12 @@ io.on('connection', function(socket) {
         socket.on('player list', function() {
             socket.emit('player list', users);
         });
+        socket.on('node clicked', function(nodes) {
+            console.log("Node click event fired");
+            grid[nodes[0]].radius += grid[nodes[1]].radius / 2;
+            grid[nodes[1]].radius /= 2;
+            socket.emit('board update');
+        });
         socket.emit('board update', grid);
         socket.emit('player list', users);
     });

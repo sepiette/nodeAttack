@@ -181,16 +181,20 @@ window.onload = function(){
 		var node;
 		if(selectedNode != undefined){
 			if(index != selectedNode.index){
+                console.log("THE THING!");
 				node = {
 					x: nodes[index].x,
 					y: nodes[index].y,
-					radius: nodes[index].radius+(selectedNode.radius/2),
+					//radius: nodes[index].radius+(selectedNode.radius/2),
+                    radius: nodes[index].radius,
 					fillColor: player.color,
 					borderColor: player.color,
 					border: 8
 				};
 
-				selectedNode.radius = selectedNode.radius/2;
+				//selectedNode.radius = selectedNode.radius/2;
+                socket.emit('node clicked', [index, selectedNode.index]);
+                socket.emit('board update');
 
 				nodes[index] = node;
 				nodes[selectedNode.index] = selectedNode;
