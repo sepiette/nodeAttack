@@ -6,7 +6,7 @@ var graph = canvas.getContext("2d");
 //Game Variables
 var playerName;
 var playerNameInput = document.getElementById('playerNameInput');
-var socket;
+var socket = io();
 var KEY_ENTER = 13;
 var animLoopHandle;
 
@@ -154,30 +154,9 @@ window.onload = function(){
 	}
 	//draw nodes on grid
 	function drawGridNodes(){
-		if(nodes.length ==0)
-		{
-			for(var w = (height/ 18); w < 8*(width/9); w+=height/ 9){
-				for(var h=(height/ 18); h < 8*(height/9); h+= height / 9){
-					var node = {
-						x: w,
-						y: h,
-						radius: 20,
-						fillColor: '#e34651',
-						borderColor: '#e34651',
-						border:8
-					};
-					nodes.push(node);
-					drawNodes(node);
-				}
-			}
-		}
-		else
-		{
-			for(n in nodes){
-				drawNodes(nodes[n]);
-			}
-		}
-		
+        for(n in nodes){
+            drawNodes(nodes[n]);
+        }
 	}
 	//resize canvas
 	function redrawCanvas() {
@@ -265,7 +244,20 @@ function gameLoop(){
 
 	redrawCanvas();
 }
-	
+
+
+
+//=================== SOCKET.IO ================== //	
+
+socket.on('board update', function(grid) {
+    console.log(nodes);
+    console.log(grid);
+    nodes = grid;
+    redrawCanvas();
+});
+
+// Call this every time a board update is needed
+socket.emit('board update');
 
 gameLoop();
 
