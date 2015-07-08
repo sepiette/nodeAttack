@@ -6,7 +6,7 @@ var graph = canvas.getContext("2d");
 //Game Variables
 var playerName;
 var playerNameInput = document.getElementById('playerNameInput');
-var socket;
+var socket = io();
 var KEY_ENTER = 13;
 var animLoopHandle;
 
@@ -102,8 +102,9 @@ window.onload = function(){
 
 //================== DRAWING FUNCTIONS ===================//
 	//draw circle function
-	function drawCircle(centerX, centerY, radius){
+	function drawCircle(centerX, centerY, radius,scalex,scaley){
 		var theta = 0;
+		
 		var x =0;
 		var y=0;
 		nVerts = 30;
@@ -112,22 +113,22 @@ window.onload = function(){
 
 		for(var i = 0; i < nVerts; i++){
 			theta = (i/nVerts) * 2 * Math.PI;
-			x = centerX + radius * Math.sin(theta);
-			y = centerY + radius * Math.cos(theta);
-			graph.lineTo(x, y);
-
+			x = scalex+centerX + radius * Math.sin(theta);
+			y = scaley+centerY + radius * Math.cos(theta);
+			graph.lineTo(x,y);
 		}
+
 		graph.closePath();
 		graph.stroke();
 		graph.fill();
 	}
 
 	//draw nodes function
-	function drawNodes(node){
+	function drawNodes(node, scalex, scaley){
 			graph.strokeStyle = node.borderColor;
 			graph.fillStyle = node.fillColor;
 			graph.lineWidth = node.border;
-			drawCircle(node.x, node.y, node.radius);			
+			drawCircle(node.x, node.y, node.radius, scalex, scaley);			
 	}
 
 	//draw grid function
@@ -153,27 +154,21 @@ window.onload = function(){
 	}
 	//draw nodes on grid
 	function drawGridNodes(){
-		if(nodes.length ==0)
-		{
-			for(var w = (height/ 18); w < 8*(width/9); w+=height/ 9){
-				for(var h=(height/ 18); h < 8*(height/9); h+= height / 9){
-					var node = {
-						x: w,
-						y: h,
-						radius: 20,
-						fillColor: '#e34651',
-						borderColor: '#e34651',
-						border:8
-					};
-					nodes.push(node);
-					drawNodes(node);
-				}
+		var scalex = 100;
+		var scaley = 100;
+		var count = 0;
+		for(n in nodes){
+			drawNodes(nodes[n], scalex,scaley);
+			
+			if(count == 13){
+				scaley+=100;
+				scalex = 100;
+				count = 0;
 			}
-		}
-		else
-		{
-			for(n in nodes){
-				drawNodes(nodes[n]);
+			else
+			{
+				scalex +=100;
+				count++;
 			}
 		}
 		
@@ -323,17 +318,27 @@ window.onload = function(){
 
 //=================== GAME LOOP ================== //	
 	//draw grid for the first time
-	function animLoop(){
+	// function animLoop(){
 
-		gameLoop();
-	}
+	// 	gameLoop();
+	// }
 	function gameLoop(){
 
 		redrawCanvas();
 	}
-		
-	animLoop();
 
 
+socket.on('board update', function(grid) {
+    console.log(nodes);
+    console.log(grid);
+    nodes = grid;
+    console.log(nodes);
+    redrawCanvas();
+});
+
+// Call this every time a board update is needed
+socket.emit('board update');
+
+gameLoop();
 //==================== end of window.onload	=======================//
 };
