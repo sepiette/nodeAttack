@@ -25,3 +25,11 @@ function collides(newCircle, circles) {
 	}
 	return false;
 }
+
+app.use(express.static(__dirname + '/../client'));
+app.use('/', express.static(__dirname + '/../client/index.html'));
+
+
+http.listen(3000, function() {
+    console.log("Listening on 0.0.0.0:3000");
+});
