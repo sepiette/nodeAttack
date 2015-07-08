@@ -31,6 +31,8 @@ window.onload = function(){
 	var xoffset = -gameWidth;
 	var yoffset = -gameHeight;
 
+	var scaleX = 100;
+	var scaleY = 100;
 
 	var canvasPos = {
 		x: canvas.offsetLeft,
@@ -102,7 +104,7 @@ window.onload = function(){
 
 //================== DRAWING FUNCTIONS ===================//
 	//draw circle function
-	function drawCircle(centerX, centerY, radius,scalex,scaley){
+	function drawCircle(centerX, centerY, radius,scaleX,scaleY){
 		var theta = 0;
 		
 		var x =0;
@@ -113,8 +115,8 @@ window.onload = function(){
 
 		for(var i = 0; i < nVerts; i++){
 			theta = (i/nVerts) * 2 * Math.PI;
-			x = scalex+centerX + radius * Math.sin(theta);
-			y = scaley+centerY + radius * Math.cos(theta);
+			x = scaleX+centerX + radius * Math.sin(theta);
+			y = scaleY+centerY + radius * Math.cos(theta);
 			graph.lineTo(x,y);
 		}
 
@@ -124,11 +126,11 @@ window.onload = function(){
 	}
 
 	//draw nodes function
-	function drawNodes(node, scalex, scaley){
+	function drawNodes(node, scaleX, scaleY){
 			graph.strokeStyle = node.borderColor;
 			graph.fillStyle = node.fillColor;
 			graph.lineWidth = node.border;
-			drawCircle(node.x, node.y, node.radius, scalex, scaley);			
+			drawCircle(node.x, node.y, node.radius, scaleX, scaleY);			
 	}
 
 	//draw grid function
@@ -154,20 +156,18 @@ window.onload = function(){
 	}
 	//draw nodes on grid
 	function drawGridNodes(){
-		var scalex = 100;
-		var scaley = 100;
 		var count = 0;
 		for(n in nodes){
-			drawNodes(nodes[n], scalex,scaley);
+			drawNodes(nodes[n], scaleX,scaleY);
 			
 			if(count == 13){
-				scaley+=100;
-				scalex = 100;
+				scaleY+=100;
+				scaleX = 100;
 				count = 0;
 			}
 			else
 			{
-				scalex +=100;
+				scaleX +=100;
 				count++;
 			}
 		}
