@@ -1,18 +1,51 @@
-// var io = require('socket.io-client');
+
 
 var canvas = document.getElementById('grid');
 var graph = canvas.getContext("2d");
 
-var c = $('#grid');
+//Game Variables
+var playerName;
+var playerNameInput = document.getElementById('playerNameInput');
+var socket;
+var KEY_ENTER = 13;
+var animLoopHandle;
+var spin = -Math.PI;
+var enemySpin = -Math.PI;
 var nodeColors = ['#5df4b7','#7b9ae4','#d12c7b','#e34651','#b4e53f','#3a0d3f','#b5b4d3','#4541ee','#58c8e0','#fc8d05'];
 
+
+function startGame(){
+	playerName = playerNameInput.value.replace(/(<([^>]+)>)/ig, '');
+	document.getElementById('startMenuWrapper').style.opacity = 0;
+	document.getElementById('gameAreaWrapper').style.opacity = 1;
+}
+// check if nick is valid alphanumeric characters (and underscores)
+function validNick() {
+    var regex = /^\w*$/;
+    // debug('Regex Test', regex.exec(playerNameInput.value));
+    return regex.exec(playerNameInput.value) !== null;
+}
 window.onload = function(){
 	
+	//start button to start game
+	var btn = document.getElementById('startButton'),
+        nickErrorText = document.querySelector('#startMenu .input-error');
+
+    btn.onclick = function () {
+
+        // check if the nick is valid
+        if (validNick()) {
+            nickErrorText.style.opacity = 0;
+            startGame();
+        } else {
+            nickErrorText.style.opacity = 1;
+        }
+    };
+
+
 	//canvas measurements
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
-	var width = window.innerWidth;
-	var height= window.innerHeight;
+	var width = 1000;
+	var height= 1000;
 	var gameWidth = 0;
 	var gameHeight = 0;
 	var xoffset = -gameWidth;
@@ -20,6 +53,9 @@ window.onload = function(){
 
 	var nodes = [];
 	var players =[];
+
+	//event listeners
+	window.addEventListener('resize', resizeCanvas, false);
 
 
 	//draw circle function
@@ -72,6 +108,41 @@ window.onload = function(){
 	    graph.globalAlpha = 1;
 
 	}
+	//draw nodes on grid
+	function drawGridNodes(){
+		if(nodes.length ==0)
+		{
+			for(var w = 4*(height/ 18); w < width; w+=height/ 9){
+				for(var h=4*(height/ 18); h < height; h+= height / 9){
+					var node = {
+						x: w,
+						y: h,
+						radius: 20,
+						fillColor: '#e34651'
+						// fillColor: nodeColors[Math.floor(Math.random()*nodeColors.length)]
+					};
+					nodes.push(node);
+					drawNodes(node);
+				}
+			}
+		}
+		else
+		{
+			for(n in nodes){
+				drawNodes(nodes[n]);
+			}
+		}
+		
+	}
+	//resize canvas
+	function resizeCanvas() {
+				graph.canvas.width = window.innerWidth;
+				graph.canvas.height = window.innerHeight;
+				// canvas.style.width = canvas.width + 'px';
+				// canvas.style.height = canvas.height + 'px';
+				drawGrid();
+				drawGridNodes();
+	}
 	
 	//euclidean algorithm function
 	function euclidDistance(p1, p2){
@@ -90,23 +161,11 @@ window.onload = function(){
 		nodes[index] = node;
 	}
 
-	//draw grid
-	drawGrid();
+	//draw grid for the first time
+	resizeCanvas();
 
-	//draw nodes on grid
-	for(var w = 4*(height/ 18); w < width; w+=height/ 9){
-		for(var h=4*(height/ 18); h < height; h+= height / 9){
-			var node = {
-				x: w,
-				y: h,
-				radius: 20,
-				fillColor: '#e34651'
-				// fillColor: nodeColors[Math.floor(Math.random()*nodeColors.length)]
-			};
-			nodes.push(node);
-			drawNodes(node);
-		}
-	}
+
+	
 
 	var canvasPos = {
 		x: canvas.offsetLeft,
@@ -141,6 +200,7 @@ window.onload = function(){
 		
 		// console.log(nodes.length);
 	};
+
 
 //==================== end of window.onload	=======================//
 };
