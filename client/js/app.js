@@ -7,6 +7,7 @@ var graph = canvas.getContext("2d");
 var playerName;
 var playerNameInput = document.getElementById('playerNameInput');
 var socket = io();
+window.socket = socket;
 var KEY_ENTER = 13;
 var animLoopHandle;
 
@@ -31,6 +32,8 @@ window.onload = function(){
 	var xoffset = -gameWidth;
 	var yoffset = -gameHeight;
 
+	var scaleX = 100;
+	var scaleY = 100;
 
 	var canvasPos = {
 		x: canvas.offsetLeft,
@@ -69,6 +72,7 @@ window.onload = function(){
 
 //====================== Event Listeners =====================//
 	window.addEventListener('resize', redrawCanvas, false);
+    console.log("Redrawing canvas");
 
 	btn.onclick = function () {
 
@@ -99,13 +103,14 @@ window.onload = function(){
 		gameStart = true;
 		console.log(player);
         socket.emit('join game', player);
-		startGame();
+        startGame();
 	}
 
 //================== DRAWING FUNCTIONS ===================//
 	//draw circle function
-	function drawCircle(centerX, centerY, radius){
+	function drawCircle(centerX, centerY, radius,scaleX,scaleY){
 		var theta = 0;
+		
 		var x =0;
 		var y=0;
 		nVerts = 30;
@@ -114,22 +119,23 @@ window.onload = function(){
 
 		for(var i = 0; i < nVerts; i++){
 			theta = (i/nVerts) * 2 * Math.PI;
-			x = centerX + radius * Math.sin(theta);
-			y = centerY + radius * Math.cos(theta);
-			graph.lineTo(x, y);
-
+			x = scaleX+centerX + radius * Math.sin(theta);
+			y = scaleY+centerY + radius * Math.cos(theta);
+			graph.lineTo(x,y);
 		}
+
 		graph.closePath();
 		graph.stroke();
 		graph.fill();
 	}
 
 	//draw nodes function
-	function drawNodes(node){
+	function drawNodes(node, scaleX, scaleY){
+        console.log("Drawing a node", node, scaleX, scaleY);
 			graph.strokeStyle = node.borderColor;
 			graph.fillStyle = node.fillColor;
 			graph.lineWidth = node.border;
-			drawCircle(node.x, node.y, node.radius);			
+			drawCircle(node.x, node.y, node.radius, scaleX, scaleY);			
 	}
 
 	//draw grid function
@@ -155,9 +161,22 @@ window.onload = function(){
 	}
 	//draw nodes on grid
 	function drawGridNodes(){
-        for(n in nodes){
-            drawNodes(nodes[n]);
-        }
+		var count = 0;
+		for(n in nodes){
+			drawNodes(nodes[n], scaleX,scaleY);
+			
+			if(count == 13){
+				scaleY+=100;
+				scaleX = 100;
+				count = 0;
+			}
+			else
+			{
+				scaleX +=100;
+				count++;
+			}
+		}
+		
 	}
 	//resize canvas
 	function redrawCanvas() {
@@ -177,7 +196,6 @@ window.onload = function(){
 
 	//highlight circle function
 	function highlightClickedCircle(index){
-		console.log(player.color);
 		var node;
 		if(selectedNode != undefined){
 			if(index != selectedNode.index){
@@ -196,8 +214,13 @@ window.onload = function(){
                 socket.emit('node clicked', [index, selectedNode.index]);
                 socket.emit('board update');
 
-				nodes[index] = node;
 				nodes[selectedNode.index] = selectedNode;
+				nodes[index] = node;
+
+				var x = Math.floor(selectedNode.x);
+				var y = Math.floor(selectedNode.y);
+
+				splitNode(x,y, node);
 
 				selectedNode = undefined;
 			}
@@ -243,18 +266,72 @@ window.onload = function(){
 		}		
 	}
 
-//=================== GAME LOOP ================== //	
-	//draw grid for the first time
-function gameLoop(){
+	//animation function for node splitting
+	function splitNode(x, y, original){
+		oX = Math.floor(original.x);
+		oY = Math.floor(original.y);
 
-	redrawCanvas();
-}
+		
+		console.log('split node is working ');
+		
+		var node = {
+			x:x,
+			y:y,
+			radius: selectedNode.radius,
+			fillColor: selectedNode.fillColor,
+			borderColor: selectedNode.borderColor,
+			border: selectedNode.border,
+			index: selectedNode.index
+		};
+
+		drawNodes(node);
+		if(x < oX && y < oY){
+			x+=1;
+			y+=1;
+		}
+		else if(x < oX && y > oY){
+			x+=1;
+			y-=1;
+		}
+		else if(x > oX && y < oY){
+			x-=1;
+			y+=1;
+		}
+		else if(x > oX && y > oY){
+			x-=1;
+			y-=1;
+		}
+		else if(x == oX && y < oY){
+			y+=1;
+		}
+		else if(x == oX && y > oY){
+			y-=1;
+		}
+		else if(x < oX && y == oY){
+			x+=1;
+		}
+		else if(x > oX && y == oY){
+			x-=1;
+		}
+
+		
+		if(x != oX && y != oY) {
+			setTimeout(splitNode(x,y,original), 2000);
+		}
+
+		// redrawCanvas();
+
+		
+			
+	}
+
 
 
 
 //=================== SOCKET.IO ================== //	
 
 socket.on('board update', function(grid) {
+    console.log("Board update received!");
     console.log(nodes);
     console.log(grid);
     nodes = grid;
@@ -268,9 +345,23 @@ socket.on('player list', function(players) {
 });
 
 // Call this every time a board update is needed
-//socket.emit('board update');
+//=================== GAME LOOP ================== //	
+	function gameLoop(){
+		redrawCanvas();
+	}
+
+
+socket.on('board update', function(grid) {
+    console.log(nodes);
+    console.log(grid);
+    nodes = grid;
+    console.log(nodes);
+    redrawCanvas();
+});
+
+// Call this every time a board update is needed
+socket.emit('board update');
 
 gameLoop();
-
 //==================== end of window.onload	=======================//
 };
