@@ -98,6 +98,7 @@ window.onload = function(){
 		player.target = target;
 		gameStart = true;
 		console.log(player);
+        socket.emit('join game', player);
 		startGame();
 	}
 
@@ -256,8 +257,14 @@ socket.on('board update', function(grid) {
     redrawCanvas();
 });
 
+socket.on('player list', function(players) {
+    // Received player list update
+    // TODO: do something with it
+    console.log(players);
+});
+
 // Call this every time a board update is needed
-socket.emit('board update');
+//socket.emit('board update');
 
 gameLoop();
 
