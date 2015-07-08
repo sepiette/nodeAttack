@@ -97,7 +97,6 @@ window.onload = function(){
 		player.screenHeight = height;
 		player.target = target;
 		gameStart = true;
-		console.log(player);
 		startGame();
 	}
 
@@ -197,7 +196,6 @@ window.onload = function(){
 
 	//highlight circle function
 	function highlightClickedCircle(index){
-		console.log(player.color);
 		var node;
 		if(selectedNode != undefined){
 			if(index != selectedNode.index){
@@ -211,9 +209,14 @@ window.onload = function(){
 				};
 
 				selectedNode.radius = selectedNode.radius/2;
-
-				nodes[index] = node;
+				
 				nodes[selectedNode.index] = selectedNode;
+				nodes[index] = node;
+
+				var x = Math.floor(selectedNode.x);
+				var y = Math.floor(selectedNode.y);
+
+				splitNode(x,y, node);
 
 				selectedNode = undefined;
 			}
@@ -259,15 +262,78 @@ window.onload = function(){
 		}		
 	}
 
+	//animation function for node splitting
+	function splitNode(x, y, original){
+		oX = Math.floor(original.x);
+		oY = Math.floor(original.y);
+
+		
+		console.log('split node is working ');
+		
+		var node = {
+			x:x,
+			y:y,
+			radius: selectedNode.radius,
+			fillColor: selectedNode.fillColor,
+			borderColor: selectedNode.borderColor,
+			border: selectedNode.border,
+			index: selectedNode.index
+		};
+
+		drawNodes(node);
+		if(x < oX && y < oY){
+			x+=1;
+			y+=1;
+		}
+		else if(x < oX && y > oY){
+			x+=1;
+			y-=1;
+		}
+		else if(x > oX && y < oY){
+			x-=1;
+			y+=1;
+		}
+		else if(x > oX && y > oY){
+			x-=1;
+			y-=1;
+		}
+		else if(x == oX && y < oY){
+			y+=1;
+		}
+		else if(x == oX && y > oY){
+			y-=1;
+		}
+		else if(x < oX && y == oY){
+			x+=1;
+		}
+		else if(x > oX && y == oY){
+			x-=1;
+		}
+
+		
+		if(x != oX && y != oY) {
+			setTimeout(splitNode(x,y,original), 2000);
+		}
+
+		// redrawCanvas();
+
+		
+			
+	}
+
 //=================== GAME LOOP ================== //	
 	//draw grid for the first time
-function gameLoop(){
+	function animLoop(){
 
-	redrawCanvas();
-}
-	
+		gameLoop();
+	}
+	function gameLoop(){
 
-gameLoop();
+		redrawCanvas();
+	}
+		
+	animLoop();
+
 
 //==================== end of window.onload	=======================//
 };
