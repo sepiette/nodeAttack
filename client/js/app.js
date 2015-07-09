@@ -90,12 +90,13 @@ window.onload = function(){
 			x: e.pageX - canvasPos.x,
 			y: e.pageY - canvasPos.y
 		};
-		checkInCircle(mouse);
+		socket.emit('click',mouse);
+		//checkInCircle(mouse);
 	};
 //===================== CONNECT TO GAME FUNCTIONS ===============//
 	function connectPlayer(){
 		
-		player.id = Math.random()*10+1;
+		player.id = Math.floor(Math.random()*10+1);
 		playerName = playerNameInput.value.replace(/(<([^>]+)>)/ig, '');
 		player.name = playerName;
 		player.screenWidth = width;
@@ -178,6 +179,8 @@ window.onload = function(){
 				count++;
 			}
 		}
+		socket.emit('add scale', nodes);
+		console.log(nodes);
 	}
 	//resize canvas
 	function redrawCanvas() {
@@ -187,86 +190,83 @@ window.onload = function(){
 				graph.canvas.height = height;
 				scaleX = 100;
 				scaleY = 100;
-				
+
 				drawGrid();
 				drawGridNodes();
 	}
 	
 	//euclidean algorithm function
-	function euclidDistance(p1, p2){
-		return Math.sqrt(Math.pow(p2.x - p1.x,2) + Math.pow(p2.y-p1.y,2));
-	}
+	// function euclidDistance(p1, p2){
+	// 	return Math.sqrt(Math.pow(p2.x - p1.x,2) + Math.pow(p2.y-p1.y,2));
+	// }
 
-	//highlight circle function
-	function highlightClickedCircle(index){
-		var node;
-		if(selectedNode != undefined){
-			if(index != selectedNode.index){
-				node = {
-					x: nodes[index].x,
-					y: nodes[index].y,
-					//radius: nodes[index].radius+(selectedNode.radius/2),
-                    radius: nodes[index].radius,
-					fillColor: player.color,
-					borderColor: player.color,
-					border: 8
-				};
+	// //highlight circle function
+	// function highlightClickedCircle(index){
+	// 	var node;
+	// 	if(selectedNode != undefined){
+	// 		if(index != selectedNode.index){
+	// 			node = {
+	// 				x: nodes[index].x,
+	// 				y: nodes[index].y,
+	// 				radius: nodes[index].radius+(selectedNode.radius/2),
+	// 				fillColor: player.color,
+	// 				borderColor: player.color,
+	// 				border: 8
+	// 			};
 
-				//selectedNode.radius = selectedNode.radius/2;
-                socket.emit('node clicked', [index, selectedNode.index]);
-                socket.emit('board update');
+	// 			selectedNode.radius = selectedNode.radius/2;
+				
+	// 			nodes[selectedNode.index] = selectedNode;
+	// 			nodes[index] = node;
 
-				nodes[selectedNode.index] = selectedNode;
-				nodes[index] = node;
+	// 			var x = Math.floor(selectedNode.x);
+	// 			var y = Math.floor(selectedNode.y);
 
-				var x = Math.floor(selectedNode.x);
-				var y = Math.floor(selectedNode.y);
+	// 			splitNode(x,y, node);
 
-				splitNode(x,y, node);
+	// 			selectedNode = undefined;
+	// 		}
+	// 	}
 
-				selectedNode = undefined;
-			}
-		}
+	// 	else{
+	// 		selectedNode = {
+	// 			x: nodes[index].x,
+	// 			y: nodes[index].y,
+	// 			radius: nodes[index].radius,
+	// 			fillColor: player.color,
+	// 			borderColor: player.color,
+	// 			border: 8,
+	// 			index: index
+	// 		};
 
-		else{
-			selectedNode = {
-				x: nodes[index].x,
-				y: nodes[index].y,
-				radius: nodes[index].radius,
-				fillColor: player.color,
-				borderColor: player.color,
-				border: 8,
-				index: index
-			};
-
-			nodes[index] = selectedNode;
-		}
+	// 		nodes[index] = selectedNode;
+	// 	}
 		
-		// nodes[index] = node;
-		redrawCanvas();
-	}
+	// 	// nodes[index] = node;
+	// 	redrawCanvas();
+	// }
 	//check to see if click in a circle function
-	function checkInCircle(mouse){
-		var n = 0;
-		var hit = false;
-		while(!hit && n < nodes.length){
+	// function checkInCircle(mouse){
+	// 	var n = 0;
+	// 	var hit = false;
+	// 	while(!hit && n < nodes.length){
 
-			var center = {
-				x: nodes[n].x + nodes[n].scaleX,
-				y: nodes[n].y + nodes[n].scaleY
-			};
+	// 		var center = {
+	// 			x: nodes[n].x + nodes[n].scaleX,
+	// 			y: nodes[n].y + nodes[n].scaleY
+	// 		};
 
-			if(euclidDistance(mouse, center) < nodes[n].radius){
-				console.log('YAY!');
-				highlightClickedCircle(n);
-				hit = true;
-			}
-			else
-			{
-				n++;
-			}
-		}		
-	}
+	// 		if(euclidDistance(mouse, center) < nodes[n].radius){
+	// 			console.log('YAY!');
+	// 			highlightClickedCircle(n);
+	// 			hit = true;
+	// 		}
+	// 		else
+	// 		{
+	// 			n++;
+	// 		}
+	// 	}		
+	// }
 
 	//animation function for node splitting
 	function splitNode(x, y, original){
@@ -347,10 +347,11 @@ socket.on('board update', function(grid) {
 socket.on('player list', function(players) {
     // Received player list update
     // TODO: do something with it
-    console.log("Got a list of players: ", players);
+    // console.log(players);
 });
 
+// Call this every time a board update is needed
+// socket.emit('board update');
 
-gameLoop();
 //==================== end of window.onload	=======================//
 };
