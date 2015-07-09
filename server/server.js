@@ -71,7 +71,7 @@ io.on('connection', function(socket) {
             console.log("Node click event fired");
             grid[nodes[0]].radius += grid[nodes[1]].radius / 2;
             grid[nodes[1]].radius /= 2;
-            socket.emit('board update');
+            io.sockets.emit('board update', grid);
         });
         socket.emit('board update', grid);
         socket.emit('player list', users);

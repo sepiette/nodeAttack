@@ -135,7 +135,7 @@ window.onload = function(){
 			graph.strokeStyle = node.borderColor;
 			graph.fillStyle = node.fillColor;
 			graph.lineWidth = node.border;
-			drawCircle(node.x, node.y, node.radius, scaleX, scaleY);			
+            drawCircle(node.x * 90, node.y * 90, node.radius, 90, 90);			
 	}
 
 	//draw grid function
@@ -199,7 +199,6 @@ window.onload = function(){
 		var node;
 		if(selectedNode != undefined){
 			if(index != selectedNode.index){
-                console.log("THE THING!");
 				node = {
 					x: nodes[index].x,
 					y: nodes[index].y,
@@ -250,8 +249,8 @@ window.onload = function(){
 		while(!hit && n < nodes.length){
 
 			var center = {
-				x: nodes[n].x,
-				y: nodes[n].y
+				x: nodes[n].x * 90 + 90,
+				y: nodes[n].y * 90 + 90
 			};
 
 			if(euclidDistance(mouse, center) < nodes[n].radius){
@@ -332,8 +331,6 @@ window.onload = function(){
 
 socket.on('board update', function(grid) {
     console.log("Board update received!");
-    console.log(nodes);
-    console.log(grid);
     nodes = grid;
     redrawCanvas();
 });
@@ -341,26 +338,14 @@ socket.on('board update', function(grid) {
 socket.on('player list', function(players) {
     // Received player list update
     // TODO: do something with it
-    console.log(players);
+    console.log("Got a list of players: ", players);
 });
 
-// Call this every time a board update is needed
 //=================== GAME LOOP ================== //	
-	function gameLoop(){
-		redrawCanvas();
-	}
-
-
-socket.on('board update', function(grid) {
-    console.log(nodes);
-    console.log(grid);
-    nodes = grid;
-    console.log(nodes);
+function gameLoop(){
     redrawCanvas();
-});
+}
 
-// Call this every time a board update is needed
-socket.emit('board update');
 
 gameLoop();
 //==================== end of window.onload	=======================//
