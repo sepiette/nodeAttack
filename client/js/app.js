@@ -12,6 +12,7 @@ var animLoopHandle;
 
 function startGame(){
 	document.getElementById('startMenuWrapper').style.opacity = 0;
+	document.getElementById('startMenuWrapper').style.display = "none";
 	document.getElementById('gameAreaWrapper').style.opacity = 1;
 }
 // check if nick is valid alphanumeric characters (and underscores)
@@ -194,55 +195,55 @@ window.onload = function(){
 	}
 	
 	//euclidean algorithm function
-	function euclidDistance(p1, p2){
-		return Math.sqrt(Math.pow(p2.x - p1.x,2) + Math.pow(p2.y-p1.y,2));
-	}
+	// function euclidDistance(p1, p2){
+	// 	return Math.sqrt(Math.pow(p2.x - p1.x,2) + Math.pow(p2.y-p1.y,2));
+	// }
 
-	//highlight circle function
-	function highlightClickedCircle(index){
-		var node;
-		if(selectedNode != undefined){
-			if(index != selectedNode.index){
-				node = {
-					x: nodes[index].x,
-					y: nodes[index].y,
-					radius: nodes[index].radius+(selectedNode.radius/2),
-					fillColor: player.color,
-					borderColor: player.color,
-					border: 8
-				};
+	// //highlight circle function
+	// function highlightClickedCircle(index){
+	// 	var node;
+	// 	if(selectedNode != undefined){
+	// 		if(index != selectedNode.index){
+	// 			node = {
+	// 				x: nodes[index].x,
+	// 				y: nodes[index].y,
+	// 				radius: nodes[index].radius+(selectedNode.radius/2),
+	// 				fillColor: player.color,
+	// 				borderColor: player.color,
+	// 				border: 8
+	// 			};
 
-				selectedNode.radius = selectedNode.radius/2;
+	// 			selectedNode.radius = selectedNode.radius/2;
 				
-				nodes[selectedNode.index] = selectedNode;
-				nodes[index] = node;
+	// 			nodes[selectedNode.index] = selectedNode;
+	// 			nodes[index] = node;
 
-				var x = Math.floor(selectedNode.x);
-				var y = Math.floor(selectedNode.y);
+	// 			var x = Math.floor(selectedNode.x);
+	// 			var y = Math.floor(selectedNode.y);
 
-				splitNode(x,y, node);
+	// 			splitNode(x,y, node);
 
-				selectedNode = undefined;
-			}
-		}
+	// 			selectedNode = undefined;
+	// 		}
+	// 	}
 
-		else{
-			selectedNode = {
-				x: nodes[index].x,
-				y: nodes[index].y,
-				radius: nodes[index].radius,
-				fillColor: player.color,
-				borderColor: player.color,
-				border: 8,
-				index: index
-			};
+	// 	else{
+	// 		selectedNode = {
+	// 			x: nodes[index].x,
+	// 			y: nodes[index].y,
+	// 			radius: nodes[index].radius,
+	// 			fillColor: player.color,
+	// 			borderColor: player.color,
+	// 			border: 8,
+	// 			index: index
+	// 		};
 
-			nodes[index] = selectedNode;
-		}
+	// 		nodes[index] = selectedNode;
+	// 	}
 		
-		// nodes[index] = node;
-		redrawCanvas();
-	}
+	// 	// nodes[index] = node;
+	// 	redrawCanvas();
+	// }
 	//check to see if click in a circle function
 	// function checkInCircle(mouse){
 	// 	var n = 0;

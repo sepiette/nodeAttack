@@ -54,7 +54,6 @@ function checkInCircle(mouse){
             };
 
             if(euclidDistance(mouse, center) < grid[n].radius){
-                console.log('YAY!');
                 hit = true;
                 return n;
             }
@@ -69,6 +68,7 @@ function checkInCircle(mouse){
 //highlight circle function
 function highlightClickedCircle(index){
     var node;
+  
     if(selectedNode != undefined){
         if(index != selectedNode.id){
             node = {
