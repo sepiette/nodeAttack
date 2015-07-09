@@ -134,7 +134,9 @@ window.onload = function(){
 			graph.strokeStyle = node.borderColor;
 			graph.fillStyle = node.fillColor;
 			graph.lineWidth = node.border;
-            drawCircle(node.x * 90, node.y * 90, node.radius, 90, 90);			
+			node.scaleX = scaleX;
+			node.scaleY = scaleY;
+			drawCircle(node.x, node.y, node.radius, scaleX, scaleY);			
 	}
 
 	//draw grid function
@@ -175,7 +177,6 @@ window.onload = function(){
 				count++;
 			}
 		}
-		
 	}
 	//resize canvas
 	function redrawCanvas() {
@@ -183,7 +184,9 @@ window.onload = function(){
 				height= window.innerHeight;
 				graph.canvas.width = width;
 				graph.canvas.height = height;
-
+				scaleX = 100;
+				scaleY = 100;
+				
 				drawGrid();
 				drawGridNodes();
 	}
@@ -248,8 +251,8 @@ window.onload = function(){
 		while(!hit && n < nodes.length){
 
 			var center = {
-				x: nodes[n].x * 90 + 90,
-				y: nodes[n].y * 90 + 90
+				x: nodes[n].x + nodes[n].scaleX,
+				y: nodes[n].y + nodes[n].scaleY
 			};
 
 			if(euclidDistance(mouse, center) < nodes[n].radius){
@@ -317,12 +320,18 @@ window.onload = function(){
 			setTimeout(splitNode(x,y,original), 2000);
 		}
 
-		// redrawCanvas();
-
-		
+		// redrawCanvas();	
 			
 	}
 
+//=================== GAME LOOP ================== //	
+	//draw grid for the first time
+	// function animLoop(){
+	// 		gameLoop();
+	// }
+	function gameLoop(){
+		redrawCanvas();
+	}
 
 
 
@@ -339,11 +348,6 @@ socket.on('player list', function(players) {
     // TODO: do something with it
     console.log("Got a list of players: ", players);
 });
-
-//=================== GAME LOOP ================== //	
-function gameLoop(){
-    redrawCanvas();
-}
 
 
 gameLoop();
