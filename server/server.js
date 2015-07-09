@@ -20,7 +20,6 @@ var xsize = 14;
 var grid = [];
 var users = [];
 
-
 for (var y = 0; y < ysize; y++) {
     for (var x = 0; x < xsize; x++) {
         var node = {
@@ -134,7 +133,6 @@ io.on('connection', function(socket) {
     socket.on('disconnect', function() {
         console.log("User disconnected.");
     });
-
     socket.on('join game', function(player) {
         //TODO: validation. Everything here trusts the client completely.
         users.push(player);
@@ -144,6 +142,12 @@ io.on('connection', function(socket) {
         });
         socket.on('player list', function() {
             socket.emit('player list', users);
+        });
+        socket.on('node clicked', function(nodes) {
+            console.log("Node click event fired");
+            grid[nodes[0]].radius += grid[nodes[1]].radius / 2;
+            grid[nodes[1]].radius /= 2;
+            io.sockets.emit('board update', grid);
         });
         socket.emit('board update', grid);
         socket.emit('player list', users);

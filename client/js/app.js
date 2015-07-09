@@ -7,6 +7,7 @@ var graph = canvas.getContext("2d");
 var playerName;
 var playerNameInput = document.getElementById('playerNameInput');
 var socket = io();
+window.socket = socket;
 var KEY_ENTER = 13;
 var animLoopHandle;
 
@@ -72,6 +73,7 @@ window.onload = function(){
 
 //====================== Event Listeners =====================//
 	window.addEventListener('resize', redrawCanvas, false);
+    console.log("Redrawing canvas");
 
 	btn.onclick = function () {
 
@@ -101,10 +103,9 @@ window.onload = function(){
 		player.screenHeight = height;
 		player.target = target;
 		gameStart = true;
-
 		console.log(player);
         socket.emit('join game', player);
-		startGame();
+        startGame();
 	}
 
 //================== DRAWING FUNCTIONS ===================//
@@ -199,6 +200,7 @@ window.onload = function(){
 	// 	return Math.sqrt(Math.pow(p2.x - p1.x,2) + Math.pow(p2.y-p1.y,2));
 	// }
 
+<<<<<<< HEAD
 	// //highlight circle function
 	// function highlightClickedCircle(index){
 	// 	var node;
@@ -240,6 +242,52 @@ window.onload = function(){
 
 	// 		nodes[index] = selectedNode;
 	// 	}
+=======
+	//highlight circle function
+	function highlightClickedCircle(index){
+		var node;
+		if(selectedNode != undefined){
+			if(index != selectedNode.index){
+				node = {
+					x: nodes[index].x,
+					y: nodes[index].y,
+					//radius: nodes[index].radius+(selectedNode.radius/2),
+                    radius: nodes[index].radius,
+					fillColor: player.color,
+					borderColor: player.color,
+					border: 8
+				};
+
+				//selectedNode.radius = selectedNode.radius/2;
+                socket.emit('node clicked', [index, selectedNode.index]);
+                socket.emit('board update');
+
+				nodes[selectedNode.index] = selectedNode;
+				nodes[index] = node;
+
+				var x = Math.floor(selectedNode.x);
+				var y = Math.floor(selectedNode.y);
+
+				splitNode(x,y, node);
+
+				selectedNode = undefined;
+			}
+		}
+
+		else{
+			selectedNode = {
+				x: nodes[index].x,
+				y: nodes[index].y,
+				radius: nodes[index].radius,
+				fillColor: player.color,
+				borderColor: player.color,
+				border: 8,
+				index: index
+			};
+
+			nodes[index] = selectedNode;
+		}
+>>>>>>> dillonDev
 		
 	// 	// nodes[index] = node;
 	// 	redrawCanvas();
@@ -338,8 +386,12 @@ window.onload = function(){
 //=================== SOCKET.IO ================== //	
 
 socket.on('board update', function(grid) {
+<<<<<<< HEAD
     // console.log(nodes);
     // console.log(grid);
+=======
+    console.log("Board update received!");
+>>>>>>> dillonDev
     nodes = grid;
     redrawCanvas();
 });
@@ -347,11 +399,17 @@ socket.on('board update', function(grid) {
 socket.on('player list', function(players) {
     // Received player list update
     // TODO: do something with it
+<<<<<<< HEAD
     // console.log(players);
 });
 
 // Call this every time a board update is needed
 // socket.emit('board update');
+=======
+    console.log("Got a list of players: ", players);
+});
+
+>>>>>>> dillonDev
 
 //==================== end of window.onload	=======================//
 };
