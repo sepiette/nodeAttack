@@ -162,7 +162,7 @@ io.on('connection', function(socket) {
             var index = checkInCircle(mouse);
             if(index != undefined){
                 highlightClickedCircle(index);
-                socket.emit('board update', grid);
+                io.sockets.emit('board update', grid);
             }
             
         });
