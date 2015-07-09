@@ -47,6 +47,16 @@ window.onload = function(){
 	var gameStart = false;
 	var nodeColors = ['#5df4b7','#7b9ae4','#d12c7b','#b4e53f','#3a0d3f','#b5b4d3','#4541ee','#58c8e0','#fc8d05'];
 	
+	var requestAnimationFrame =  
+        window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        function(callback) {
+          return setTimeout(callback,1);
+        };
+
 	var playerConfig = {
 	    border: 6,
 	    textColor: '#FFFFFF',
@@ -64,8 +74,9 @@ window.onload = function(){
 		color: nodeColors[Math.floor(Math.random()*(nodeColors.length))]
 	};
 
-
-	var selectedNode = undefined;
+	var selectedNode;
+	var circle;
+	var nodeDistance;
 	var nodes = [];
 	var players =[];
 	var leaderboard = [];
@@ -132,12 +143,12 @@ window.onload = function(){
 	}
 
 	//draw nodes function
-	function drawNodes(node, scaleX, scaleY){
+	function drawNodes(node, scalex, scaley){
 			graph.strokeStyle = node.borderColor;
 			graph.fillStyle = node.fillColor;
 			graph.lineWidth = node.border;
-			node.scaleX = scaleX;
-			node.scaleY = scaleY;
+			node.scaleX = scalex;
+			node.scaleY = scaley;
 			drawCircle(node.x, node.y, node.radius, scaleX, scaleY);			
 	}
 
@@ -180,7 +191,6 @@ window.onload = function(){
 			}
 		}
 		socket.emit('add scale', nodes);
-		console.log(nodes);
 	}
 	//resize canvas
 	function redrawCanvas() {
@@ -196,62 +206,42 @@ window.onload = function(){
 	}
 	
 	//animation function for node splitting
-	function splitNode(x, y, original){
-		oX = Math.floor(original.x);
-		oY = Math.floor(original.y);
+	function animate(prop, dist, duration){
+		var start = new Date().getTime();
+		var end = start + duration;
+		var current = circle[prop];
+		var goal = {};
+		if(dist[prop] < 0){
+			goal[prop] = circle[prop]-dist;
+		}
+		else
+		{
+			goal[prop] = dist-circle[prop];
+		}
+	
+		drawNodes(circle, circle.x, circle.y);
 
-		
-		console.log('split node is working ');
-		
-		var node = {
-			x:x,
-			y:y,
-			radius: selectedNode.radius,
-			fillColor: selectedNode.fillColor,
-			borderColor: selectedNode.borderColor,
-			border: selectedNode.border,
-			index: selectedNode.index
+		var step = function(){
+			var timestamp = new Date().getTime();
+			console.log(circle[prop]);
+
+			//update value of property
+			if(dist[prop] < 0)
+			{
+				circle[prop] +=1;
+			}
+			else if(dist[prop] > 0)
+			{
+				circle[prop] -=1;
+			}
+
+			if(circle[prop] != goal[prop]){
+				requestAnimationFrame(step);
+			}
 		};
 
-		drawNodes(node);
-		if(x < oX && y < oY){
-			x+=1;
-			y+=1;
-		}
-		else if(x < oX && y > oY){
-			x+=1;
-			y-=1;
-		}
-		else if(x > oX && y < oY){
-			x-=1;
-			y+=1;
-		}
-		else if(x > oX && y > oY){
-			x-=1;
-			y-=1;
-		}
-		else if(x == oX && y < oY){
-			y+=1;
-		}
-		else if(x == oX && y > oY){
-			y-=1;
-		}
-		else if(x < oX && y == oY){
-			x+=1;
-		}
-		else if(x > oX && y == oY){
-			x-=1;
-		}
-
-		
-		if(x != oX && y != oY) {
-			setTimeout(splitNode(x,y,original), 2000);
-		}
-
-		// redrawCanvas();	
-			
+		return step();
 	}
-
 //=================== GAME LOOP ================== //	
 	//draw grid for the first time
 	// function animLoop(){
@@ -279,6 +269,26 @@ socket.on('player list', function(players) {
 
 });
 
+socket.on('distance', function(distance){
+
+	animate('x',distance,1000);
+	animate('y',distance,1000);
+});
+
+socket.on('selectedNode', function(node){
+	selectedNode = node;
+	circle = {
+			x: selectedNode.x + selectedNode.scaleX,
+			y: selectedNode.y + selectedNode.scaleY,
+			scaleX: selectedNode.scaleX,
+			scaleY: selectedNode.scaleY,
+			borderColor: selectedNode.borderColor,
+			fillColor: selectedNode.fillColor,
+			radius: selectedNode.radius/2,
+			border: 8
+	};
+
+});
 
 //==================== end of window.onload	=======================//
 };
