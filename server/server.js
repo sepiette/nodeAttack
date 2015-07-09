@@ -79,6 +79,6 @@ io.on('connection', function(socket) {
 });
 
 
-http.listen(3000, function() {
-    console.log("Listening on 0.0.0.0:3000");
+http.listen(8000, function() {
+    console.log("Listening on 0.0.0.0:8000");
 });

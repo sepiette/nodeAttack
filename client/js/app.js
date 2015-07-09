@@ -23,6 +23,32 @@ function validName() {
     return regex.exec(playerNameInput.value) !== null;
 }
 
+//================Need for Animation ===========//
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
+                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+ 
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+ 
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
+
 window.onload = function(){
 	
 //================= CANVAS VARS ===============//
@@ -240,6 +266,8 @@ window.onload = function(){
 			};
 
 			nodes[index] = selectedNode;
+			players.push(selectedNode);
+			animate();
 		}
 		
 		// nodes[index] = node;
@@ -266,6 +294,41 @@ window.onload = function(){
 				n++;
 			}
 		}		
+	}
+	function growNodes(){//Adds radius and mass to selected nodes
+		for(var i = 0; i < players.length; i++){
+			if(nodes[i].radius === 60){
+				nodes[i].radius = 60;
+				nodes[i].mass = 60;
+			}
+			//grows the node to the max
+			else{
+				nodes[i].radius += .01;
+				nodes[i].mass += .1;
+				drawNodes(nodes[i]);
+			}
+		}
+		
+		console.log("i am TRYING to grow " + nodes[i]) ;
+
+	}
+	function shrinkNodes(){//removes radius and mass to selected nodes
+		for(var i = 0; i < players.length; i++){
+			if (players[i].radius >= 60){
+				players[i].radius += -.1;
+				players[i].mass += -.1;
+				drawNodes(players[i]);
+			}
+		}
+
+		
+		console.log("i am TRYING to shrink " + players[i]) ;
+
+	}
+	function animate(){
+		requestAnimationFrame(animate);
+		growNodes();
+
 	}
 
 	//animation function for node splitting
