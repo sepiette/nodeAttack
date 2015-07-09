@@ -16,6 +16,8 @@ var xsize = 14;
 
 
 var grid = [];
+var users = [];
+
 
 for (var y = 0; y < ysize; y++) {
     for (var x = 0; x < xsize; x++) {
@@ -56,8 +58,19 @@ io.on('connection', function(socket) {
     socket.on('disconnect', function() {
         console.log("User disconnected.");
     });
-    socket.on('board update', function() {
+
+    socket.on('join game', function(player) {
+        //TODO: validation. Everything here trusts the client completely.
+        users.push(player);
+        console.log("Player " + player.name + " entered the game.");
+        socket.on('board update', function() {
+            socket.emit('board update', grid);
+        });
+        socket.on('player list', function() {
+            socket.emit('player list', users);
+        });
         socket.emit('board update', grid);
+        socket.emit('player list', users);
     });
 });
 
