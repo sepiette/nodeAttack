@@ -13,6 +13,7 @@ var animLoopHandle;
 
 function startGame(){
 	document.getElementById('startMenuWrapper').style.opacity = 0;
+	document.getElementById('startMenuWrapper').style.display = "none";
 	document.getElementById('gameAreaWrapper').style.opacity = 1;
 }
 // check if nick is valid alphanumeric characters (and underscores)
