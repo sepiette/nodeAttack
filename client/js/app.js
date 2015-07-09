@@ -131,7 +131,6 @@ window.onload = function(){
 
 	//draw nodes function
 	function drawNodes(node, scaleX, scaleY){
-        console.log("Drawing a node", node, scaleX, scaleY);
 			graph.strokeStyle = node.borderColor;
 			graph.fillStyle = node.fillColor;
 			graph.lineWidth = node.border;
