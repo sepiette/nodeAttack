@@ -156,11 +156,21 @@ io.on('connection', function(socket) {
     console.log("User connected.");
     socket.on('disconnect', function() {
         console.log("User disconnected.");
+        if (typeof(socket.attached_player) !== 'undefined') {
+            console.log("Player " + socket.attached_player.name + " disconnected.");
+            users.splice(users.indexOf(socket.attached_player), 1); // Remove the player who disconnected from the array
+            io.sockets.emit('player list', users);
+        }
+        else {
+            console.log("Socket without player disconnected.");
+        }
     });
     socket.on('join game', function(player) {
         //TODO: validation. Everything here trusts the client completely.
         users.push(player);
+        socket.attached_player = player;
         console.log("Player " + player.name + " entered the game.");
+        io.sockets.emit('player list', users);
         socket.on('board update', function() {
             socket.emit('board update', grid);
         });
@@ -184,7 +194,7 @@ io.on('connection', function(socket) {
         //check to see if click happened in node
         socket.on('click',function(mouse){
             var index = checkInCircle(mouse);
-            if(index != undefined){
+            if(typeof(index) !== 'undefined'){
                 highlightClickedCircle(index);
                 io.sockets.emit('board update', grid);
             }

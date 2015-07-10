@@ -263,7 +263,11 @@ socket.on('board update', function(grid) {
 socket.on('player list', function(players) {
     // Received player list update
     // TODO: do something with it
-
+	console.log(players);
+	$('#playerlist').empty();
+	for (var i = 0; i < players.length; i++) {
+		$('#playerlist').append($('<li>' + players[i].name + '</li>'));
+	}
 });
 
 socket.on('distance', function(distance){
