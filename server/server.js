@@ -105,14 +105,13 @@ function highlightClickedCircle(index){
             };
 
             selectedNode.radius = selectedNode.radius/2;
-            
+            selectedNode.borderColor = currentUser.color;
+
             grid[selectedNode.id] = selectedNode;
             grid[index] = sendNode;
 
             //add new node index to list of user nodes
             userNodes.push(sendNode.id);
-            // getDistance();
-
             selectedNode = undefined;
         }
     }
@@ -129,7 +128,7 @@ function highlightClickedCircle(index){
                 scaleY: grid[index].scaleY,
                 radius: grid[index].radius,
                 fillColor: currentUser.color,
-                borderColor: currentUser.color,
+                borderColor: '#000000',
                 border: 8
             };
             grid[index] = selectedNode;
