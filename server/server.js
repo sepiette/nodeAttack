@@ -7,6 +7,7 @@ var io = require('socket.io')(http);
 var SAT = require('sat');
 
 var selectedNode = undefined;
+var sendNode = undefined;
 var ct = 0;
 
 var circles = [];
@@ -64,13 +65,31 @@ function checkInCircle(mouse){
         // return hit;      
 }
 
+
+// distance function for animation
+function getDistance(){
+        var distanceX = (sendNode.x + sendNode.scaleX) - (selectedNode.x + selectedNode.scaleX);
+        var distanceY = (sendNode.y + sendNode.scaleY) - (selectedNode.y + selectedNode.scaleY);
+
+        console.log("distance x:"+distanceX);
+        console.log("distance y:"+distanceY);
+
+        var distance = {
+            x: distanceX,
+            y: distanceY
+        };
+
+        io.emit('distance', distance);
+
+}
+
 //highlight circle function
 function highlightClickedCircle(index){
     var node;
   
     if(selectedNode != undefined){
         if(index != selectedNode.id){
-            node = {
+            sendNode = {
                 id: grid[index].id,
                 x: grid[index].x,
                 y: grid[index].y,
@@ -85,7 +104,9 @@ function highlightClickedCircle(index){
             selectedNode.radius = selectedNode.radius/2;
             
             grid[selectedNode.id] = selectedNode;
-            grid[index] = node;
+            grid[index] = sendNode;
+
+            getDistance();
 
             selectedNode = undefined;
         }
@@ -93,17 +114,20 @@ function highlightClickedCircle(index){
 
     else{
         selectedNode = {
+            id: index,
             x: grid[index].x,
             y: grid[index].y,
+            scaleX: grid[index].scaleX,
+            scaleY: grid[index].scaleY,
             radius: grid[index].radius,
             fillColor: '#7b9ae4',
             borderColor: '#7b9ae4',
-            border: 8,
-            id: index
+            border: 8
         };
-
         grid[index] = selectedNode;
+        io.emit('selectedNode', selectedNode);
     }
+    
 }
 
 //collision detection function
