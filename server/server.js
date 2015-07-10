@@ -22,6 +22,7 @@ var xsize = 14;
 var grid = [];
 var users = [];
 var currentUser;
+var userNodes;
 
 for (var y = 0; y < ysize; y++) {
     for (var x = 0; x < xsize; x++) {
@@ -108,26 +109,33 @@ function highlightClickedCircle(index){
             grid[selectedNode.id] = selectedNode;
             grid[index] = sendNode;
 
-            getDistance();
+            //add new node index to list of user nodes
+            userNodes.push(sendNode.id);
+            // getDistance();
 
             selectedNode = undefined;
         }
     }
 
     else{
-        selectedNode = {
-            id: index,
-            x: grid[index].x,
-            y: grid[index].y,
-            scaleX: grid[index].scaleX,
-            scaleY: grid[index].scaleY,
-            radius: grid[index].radius,
-            fillColor: currentUser.color,
-            borderColor: currentUser.color,
-            border: 8
-        };
-        grid[index] = selectedNode;
-        io.emit('selectedNode', selectedNode);
+        //if the index is in the list of user nodes, it can be selected
+        console.log(userNodes.indexOf(index));
+        if(userNodes.indexOf(index) != -1){
+            selectedNode = {
+                id: index,
+                x: grid[index].x,
+                y: grid[index].y,
+                scaleX: grid[index].scaleX,
+                scaleY: grid[index].scaleY,
+                radius: grid[index].radius,
+                fillColor: currentUser.color,
+                borderColor: currentUser.color,
+                border: 8
+            };
+            grid[index] = selectedNode;
+            io.emit('selectedNode', selectedNode);
+        }
+        
     }
     
 }
@@ -153,10 +161,12 @@ function enterGame(player){
         player.id = users.indexOf(player);
         users[player.id] = player; 
         currentUser = player;
+        userNodes = [];
         
         console.log("Player " + player.name + " entered the game.");
         
         var randNum = Math.floor(Math.random()*grid.length);
+        userNodes.push(randNum);
         grid[randNum].fillColor = player.color;
         grid[randNum].borderColor = player.color;
 }
