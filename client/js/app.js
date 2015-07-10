@@ -1,4 +1,4 @@
-
+// vim: tabstop=4:softtabstop=0:noexpandtab:shiftwidth=4
 
 var canvas = document.getElementById('grid');
 var graph = canvas.getContext("2d");
@@ -260,9 +260,6 @@ function startGame(){
 //=================== SOCKET.IO ================== //	
 
 socket.on('board update', function(grid) {
-
-    // console.log(nodes);
-    // console.log(grid);
     nodes = grid;
     redrawCanvas();
 });
@@ -270,9 +267,17 @@ socket.on('board update', function(grid) {
 socket.on('player list', function(users) {
     // Received player list update
     // TODO: do something with it
+<<<<<<< HEAD
     players = users;
    	currentPlayer = players[players.length-1];
 
+=======
+	console.log(players);
+	$('#playerlist').empty();
+	for (var i = 0; i < players.length; i++) {
+		$('#playerlist').append($('<li>' + players[i].name + '</li>'));
+	}
+>>>>>>> dillonDev
 });
 
 // socket.on('distance', function(distance){
