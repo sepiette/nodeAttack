@@ -8,6 +8,8 @@ var SAT = require('sat');
 
 var selectedNode = undefined;
 var sendNode = undefined;
+var neutralColor = '#888';
+var minRad = 5;
 
 var ct = 0;
 
@@ -31,8 +33,8 @@ for (var y = 0; y < ysize; y++) {
             x: x,
             y: y,
             radius: 20,
-            fillColor: '#e34651',
-            borderColor: '#e34651',
+            fillColor: neutralColor,
+            borderColor: neutralColor,
             border: 8
         };
         grid.push(node);
@@ -70,7 +72,7 @@ function checkInCircle(mouse){
 
 
 // distance function for animation
-function getDistance(){
+function getDistance(selectedNode, sendNode){
         var distanceX = (sendNode.x + sendNode.scaleX) - (selectedNode.x + selectedNode.scaleX);
         var distanceY = (sendNode.y + sendNode.scaleY) - (selectedNode.y + selectedNode.scaleY);
 
@@ -85,40 +87,92 @@ function getDistance(){
         io.emit('distance', distance);
 
 }
-
-//highlight circle function
-function highlightClickedCircle(index){
-    var node;
-  
-    if(selectedNode != undefined){
-        if(index != selectedNode.id){
-            sendNode = {
+//check mass function
+function compareMass(index, select){
+    console.log('rad bigger: '+ ((select.radius/2) >= grid[index].radius));
+    console.log('rad smaller: '+ ((select.radius/2) < grid[index].radius));
+   
+   //if it is not a neutral node or your own
+    if (grid[index].fillColor != neutralColor && grid[index].fillColor != select.fillColor){
+            
+            if ((select.radius/2) >= grid[index].radius/2){
+                sendNode = {
+                        id: grid[index].id,
+                        x: grid[index].x,
+                        y: grid[index].y,
+                        scaleX: grid[index].scaleX,
+                        scaleY: grid[index].scaleY,
+                        radius: grid[index].radius + (select.radius/2),
+                        fillColor: currentUser.color,
+                        borderColor: currentUser.color,
+                        border: 8
+                    };
+            }
+            else if(select.radius/2 < grid[index].radius/2){
+                sendNode = {
+                        id: grid[index].id,
+                        x: grid[index].x,
+                        y: grid[index].y,
+                        scaleX: grid[index].scaleX,
+                        scaleY: grid[index].scaleY,
+                        radius: grid[index].radius - (select.radius/2),
+                        fillColor: grid[index].fillColor,
+                        borderColor: grid[index].borderColor,
+                        border: 8
+                    };
+            }
+    }
+        
+    else{
+        sendNode = {
                 id: grid[index].id,
                 x: grid[index].x,
                 y: grid[index].y,
                 scaleX: grid[index].scaleX,
                 scaleY: grid[index].scaleY,
-                radius: grid[index].radius+(selectedNode.radius/2),
+                radius: grid[index].radius + (select.radius/2),
                 fillColor: currentUser.color,
                 borderColor: currentUser.color,
                 border: 8
-            };
+        };
+        
+    }
+    console.log('rad size'+ select.radius);
+    return sendNode;
+}
+//highlight circle function
+function highlightClickedCircle(index){
+    var newNode;
+
+    if(selectedNode != undefined){
+        if(index != selectedNode.id){
+            
+            //compare mass of two nodes to make comparison
+            newNode = compareMass(index, selectedNode);
+            // console.log(newNode);
 
             selectedNode.radius = selectedNode.radius/2;
             selectedNode.borderColor = currentUser.color;
 
             grid[selectedNode.id] = selectedNode;
-            grid[index] = sendNode;
 
             //add new node index to list of user nodes
-            userNodes.push(sendNode.id);
+            if (newNode != undefined){
+                userNodes.push(newNode.id);
+                grid[index] = newNode;
+            }
+
+            //get distance between nodes
+            //getDistance(selectedNode, newNode);
+
+            
+           
             selectedNode = undefined;
         }
     }
 
     else{
         //if the index is in the list of user nodes, it can be selected
-        console.log(userNodes.indexOf(index));
         if(userNodes.indexOf(index) != -1){
             selectedNode = {
                 id: index,
@@ -128,13 +182,12 @@ function highlightClickedCircle(index){
                 scaleY: grid[index].scaleY,
                 radius: grid[index].radius,
                 fillColor: currentUser.color,
-                borderColor: '#000000',
+                borderColor: '#fff',
                 border: 8
             };
             grid[index] = selectedNode;
             io.emit('selectedNode', selectedNode);
-        }
-        
+        }   
     }
     
 }
