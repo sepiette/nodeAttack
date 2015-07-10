@@ -16,6 +16,19 @@ function startGame(){
 	document.getElementById('startMenuWrapper').style.display = "none";
 	document.getElementById('gameAreaWrapper').style.opacity = 1;
 }
+function stopGame() {
+	// For now, just hide everything.
+	document.getElementById('startMenuWrapper').style.opacity = 0;
+	document.getElementById('startMenuWrapper').style.display = "none";
+	document.getElementById('gameAreaWrapper').style.opacity = 0;
+	document.getElementById('gameAreaWrapper').style.display = "none";
+	document.getElementById('playerlistwrapper').style.opacity = 0;
+	document.getElementById('playerlistwrapper').style.display = "none";
+
+
+	// Show the disconnect message.
+	$('#disconnectmessage').css('display', 'block');
+}
 // check if nick is valid alphanumeric characters (and underscores)
 function validName() {
     var regex = /^\w*$/;
@@ -254,7 +267,9 @@ window.onload = function(){
 
 
 //=================== SOCKET.IO ================== //	
-
+socket.on('disconnect', function() {
+	stopGame();
+});
 socket.on('board update', function(grid) {
     nodes = grid;
     redrawCanvas();
