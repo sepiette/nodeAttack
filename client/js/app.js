@@ -1,4 +1,4 @@
-
+// vim: tabstop=4:softtabstop=0:noexpandtab:shiftwidth=4
 
 var canvas = document.getElementById('grid');
 var graph = canvas.getContext("2d");
