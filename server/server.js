@@ -182,17 +182,12 @@ io.on('connection', function(socket) {
     });
     socket.on('join game', function(player) {
         //TODO: validation. Everything here trusts the client completely.
-<<<<<<< HEAD
 
         enterGame(player);
-        io.sockets.emit('board update', grid);
 
-=======
         users.push(player);
         socket.attached_player = player;
-        console.log("Player " + player.name + " entered the game.");
         io.sockets.emit('player list', users);
->>>>>>> dillonDev
         socket.on('board update', function() {
             socket.emit('board update', grid);
         });
