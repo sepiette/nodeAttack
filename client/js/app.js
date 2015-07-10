@@ -11,11 +11,7 @@ window.socket = socket;
 var KEY_ENTER = 13;
 var animLoopHandle;
 
-function startGame(){
-	document.getElementById('startMenuWrapper').style.opacity = 0;
-	document.getElementById('startMenuWrapper').style.display = "none";
-	document.getElementById('gameAreaWrapper').style.opacity = 1;
-}
+
 // check if nick is valid alphanumeric characters (and underscores)
 function validName() {
     var regex = /^\w*$/;
@@ -79,6 +75,7 @@ window.onload = function(){
 	var nodeDistance;
 	var nodes = [];
 	var players =[];
+	var currentPlayer;
 	var leaderboard = [];
 	var target = {x: player.x, y: player.y};
 
@@ -105,6 +102,11 @@ window.onload = function(){
 		//checkInCircle(mouse);
 	};
 //===================== CONNECT TO GAME FUNCTIONS ===============//
+function startGame(){
+	document.getElementById('startMenuWrapper').style.opacity = 0;
+	document.getElementById('startMenuWrapper').style.display = "none";
+	document.getElementById('gameAreaWrapper').style.opacity = 1;
+}
 	function connectPlayer(){
 		
 		player.id = Math.floor(Math.random()*10+1);
@@ -114,9 +116,10 @@ window.onload = function(){
 		player.screenHeight = height;
 		player.target = target;
 		gameStart = true;
-		console.log(player);
         socket.emit('join game', player);
+        socket.emit('player list');
         startGame();
+        
 	}
 
 //================== DRAWING FUNCTIONS ===================//
@@ -205,43 +208,44 @@ window.onload = function(){
 				drawGridNodes();
 	}
 	
-	//animation function for node splitting
-	function animate(prop, dist, duration){
-		var start = new Date().getTime();
-		var end = start + duration;
-		var current = circle[prop];
-		var goal = {};
-		if(dist[prop] < 0){
-			goal[prop] = circle[prop]-dist;
-		}
-		else
-		{
-			goal[prop] = dist-circle[prop];
-		}
+	// //animation function for node splitting
+	// function animate(prop, dist, duration){
+	// 	var start = new Date().getTime();
+	// 	var end = start + duration;
+	// 	var current = circle[prop];
+	// 	var goal = {};
+		
+	// 	if(dist[prop] < 0){
+	// 		goal[prop] = circle[prop]-dist;
+	// 	}
+	// 	else
+	// 	{
+	// 		goal[prop] = dist-circle[prop];
+	// 	}
 	
-		drawNodes(circle, circle.x, circle.y);
+	// 	drawNodes(circle, circle.x, circle.y);
 
-		var step = function(){
-			var timestamp = new Date().getTime();
-			console.log(circle[prop]);
+	// 	var step = function(){
+	// 		var timestamp = new Date().getTime();
+	// 		console.log(dist);
 
-			//update value of property
-			if(dist[prop] < 0)
-			{
-				circle[prop] +=1;
-			}
-			else if(dist[prop] > 0)
-			{
-				circle[prop] -=1;
-			}
+	// 		//update value of property
+	// 		if(dist[prop] < 0)
+	// 		{
+	// 			circle[prop] -=1;
+	// 		}
+	// 		else if(dist[prop] > 0)
+	// 		{
+	// 			circle[prop] +=1;
+	// 		}
 
-			if(circle[prop] != goal[prop]){
-				requestAnimationFrame(step);
-			}
-		};
+	// 		if(circle[prop] != goal[prop]){
+	// 			requestAnimationFrame(step);
+	// 		}
+	// 	};
 
-		return step();
-	}
+	// 	return step();
+	// }
 //=================== GAME LOOP ================== //	
 	//draw grid for the first time
 	// function animLoop(){
@@ -263,32 +267,37 @@ socket.on('board update', function(grid) {
     redrawCanvas();
 });
 
-socket.on('player list', function(players) {
+socket.on('player list', function(users) {
     // Received player list update
     // TODO: do something with it
+    players = users;
+   	currentPlayer = players[players.length-1];
 
 });
 
-socket.on('distance', function(distance){
+// socket.on('distance', function(distance){
 
-	animate('x',distance,1000);
-	animate('y',distance,1000);
-});
+// 	animate('x',distance,1000);
+// 	animate('y',distance,1000);
+// });
 
 socket.on('selectedNode', function(node){
 	selectedNode = node;
-	circle = {
-			x: selectedNode.x + selectedNode.scaleX,
-			y: selectedNode.y + selectedNode.scaleY,
-			scaleX: selectedNode.scaleX,
-			scaleY: selectedNode.scaleY,
-			borderColor: selectedNode.borderColor,
-			fillColor: selectedNode.fillColor,
-			radius: selectedNode.radius/2,
-			border: 8
-	};
+	// circle = {
+	// 		x: selectedNode.x + selectedNode.scaleX,
+	// 		y: selectedNode.y + selectedNode.scaleY,
+	// 		scaleX: selectedNode.scaleX,
+	// 		scaleY: selectedNode.scaleY,
+	// 		borderColor: selectedNode.borderColor,
+	// 		fillColor: selectedNode.fillColor,
+	// 		radius: selectedNode.radius/2,
+	// 		border: 8
+	// };
+	// console.log('x: '+circle.x);
+	// console.log('y: '+circle.y);
 
 });
+
 
 //==================== end of window.onload	=======================//
 };
