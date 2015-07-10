@@ -11,43 +11,13 @@ window.socket = socket;
 var KEY_ENTER = 13;
 var animLoopHandle;
 
-function startGame(){
-	document.getElementById('startMenuWrapper').style.opacity = 0;
-	document.getElementById('startMenuWrapper').style.display = "none";
-	document.getElementById('gameAreaWrapper').style.opacity = 1;
-}
+
 // check if nick is valid alphanumeric characters (and underscores)
 function validName() {
     var regex = /^\w*$/;
     // debug('Regex Test', regex.exec(playerNameInput.value));
     return regex.exec(playerNameInput.value) !== null;
 }
-
-//================Need for Animation ===========//
-(function() {
-    var lastTime = 0;
-    var vendors = ['ms', 'moz', 'webkit', 'o'];
-    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
-        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
-                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
-    }
- 
-    if (!window.requestAnimationFrame)
-        window.requestAnimationFrame = function(callback, element) {
-            var currTime = new Date().getTime();
-            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
-              timeToCall);
-            lastTime = currTime + timeToCall;
-            return id;
-        };
- 
-    if (!window.cancelAnimationFrame)
-        window.cancelAnimationFrame = function(id) {
-            clearTimeout(id);
-        };
-}());
 
 window.onload = function(){
 	
@@ -73,6 +43,16 @@ window.onload = function(){
 	var gameStart = false;
 	var nodeColors = ['#5df4b7','#7b9ae4','#d12c7b','#b4e53f','#3a0d3f','#b5b4d3','#4541ee','#58c8e0','#fc8d05'];
 	
+	var requestAnimationFrame =  
+        window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        function(callback) {
+          return setTimeout(callback,1);
+        };
+
 	var playerConfig = {
 	    border: 6,
 	    textColor: '#FFFFFF',
@@ -90,10 +70,12 @@ window.onload = function(){
 		color: nodeColors[Math.floor(Math.random()*(nodeColors.length))]
 	};
 
-
-	var selectedNode = undefined;
+	var selectedNode;
+	var circle;
+	var nodeDistance;
 	var nodes = [];
 	var players =[];
+	var currentPlayer;
 	var leaderboard = [];
 	var target = {x: player.x, y: player.y};
 
@@ -116,21 +98,28 @@ window.onload = function(){
 			x: e.pageX - canvasPos.x,
 			y: e.pageY - canvasPos.y
 		};
-		checkInCircle(mouse);
+		socket.emit('click',mouse);
+		//checkInCircle(mouse);
 	};
 //===================== CONNECT TO GAME FUNCTIONS ===============//
+function startGame(){
+	document.getElementById('startMenuWrapper').style.opacity = 0;
+	document.getElementById('startMenuWrapper').style.display = "none";
+	document.getElementById('gameAreaWrapper').style.opacity = 1;
+}
 	function connectPlayer(){
 		
-		player.id = Math.random()*10+1;
+		player.id = Math.floor(Math.random()*10+1);
 		playerName = playerNameInput.value.replace(/(<([^>]+)>)/ig, '');
 		player.name = playerName;
 		player.screenWidth = width;
 		player.screenHeight = height;
 		player.target = target;
 		gameStart = true;
-		console.log(player);
         socket.emit('join game', player);
+        socket.emit('player list');
         startGame();
+        
 	}
 
 //================== DRAWING FUNCTIONS ===================//
@@ -157,12 +146,12 @@ window.onload = function(){
 	}
 
 	//draw nodes function
-	function drawNodes(node, scaleX, scaleY){
+	function drawNodes(node, scalex, scaley){
 			graph.strokeStyle = node.borderColor;
 			graph.fillStyle = node.fillColor;
 			graph.lineWidth = node.border;
-			node.scaleX = scaleX;
-			node.scaleY = scaleY;
+			node.scaleX = scalex;
+			node.scaleY = scaley;
 			drawCircle(node.x, node.y, node.radius, scaleX, scaleY);			
 	}
 
@@ -204,6 +193,7 @@ window.onload = function(){
 				count++;
 			}
 		}
+		socket.emit('add scale', nodes);
 	}
 	//resize canvas
 	function redrawCanvas() {
@@ -213,181 +203,49 @@ window.onload = function(){
 				graph.canvas.height = height;
 				scaleX = 100;
 				scaleY = 100;
-				
+
 				drawGrid();
 				drawGridNodes();
 	}
 	
-	//euclidean algorithm function
-	function euclidDistance(p1, p2){
-		return Math.sqrt(Math.pow(p2.x - p1.x,2) + Math.pow(p2.y-p1.y,2));
-	}
-
-	//highlight circle function
-	function highlightClickedCircle(index){
-		var node;
-		if(selectedNode != undefined){
-			if(index != selectedNode.index){
-				node = {
-					x: nodes[index].x,
-					y: nodes[index].y,
-					//radius: nodes[index].radius+(selectedNode.radius/2),
-                    radius: nodes[index].radius,
-					fillColor: player.color,
-					borderColor: player.color,
-					border: 8
-				};
-
-				//selectedNode.radius = selectedNode.radius/2;
-                socket.emit('node clicked', [index, selectedNode.index]);
-                socket.emit('board update');
-
-				nodes[selectedNode.index] = selectedNode;
-				nodes[index] = node;
-
-				var x = Math.floor(selectedNode.x);
-				var y = Math.floor(selectedNode.y);
-
-				splitNode(x,y, node);
-
-				selectedNode = undefined;
-			}
-		}
-
-		else{
-			selectedNode = {
-				x: nodes[index].x,
-				y: nodes[index].y,
-				radius: nodes[index].radius,
-				fillColor: player.color,
-				borderColor: player.color,
-				border: 8,
-				index: index
-			};
-
-			nodes[index] = selectedNode;
-			players.push(selectedNode);
-			animate();
-		}
+	// //animation function for node splitting
+	// function animate(prop, dist, duration){
+	// 	var start = new Date().getTime();
+	// 	var end = start + duration;
+	// 	var current = circle[prop];
+	// 	var goal = {};
 		
-		// nodes[index] = node;
-		redrawCanvas();
-	}
-	//check to see if click in a circle function
-	function checkInCircle(mouse){
-		var n = 0;
-		var hit = false;
-		while(!hit && n < nodes.length){
+	// 	if(dist[prop] < 0){
+	// 		goal[prop] = circle[prop]-dist;
+	// 	}
+	// 	else
+	// 	{
+	// 		goal[prop] = dist-circle[prop];
+	// 	}
+	
+	// 	drawNodes(circle, circle.x, circle.y);
 
-			var center = {
-				x: nodes[n].x + nodes[n].scaleX,
-				y: nodes[n].y + nodes[n].scaleY
-			};
+	// 	var step = function(){
+	// 		var timestamp = new Date().getTime();
+	// 		console.log(dist);
 
-			if(euclidDistance(mouse, center) < nodes[n].radius){
-				console.log('YAY!');
-				highlightClickedCircle(n);
-				hit = true;
-			}
-			else
-			{
-				n++;
-			}
-		}		
-	}
-	function growNodes(){//Adds radius and mass to selected nodes
-		for(var i = 0; i < players.length; i++){
-			if(nodes[i].radius === 60){
-				nodes[i].radius = 60;
-				nodes[i].mass = 60;
-			}
-			//grows the node to the max
-			else{
-				nodes[i].radius += .01;
-				nodes[i].mass += .1;
-				drawNodes(nodes[i]);
-			}
-		}
-		
-		console.log("i am TRYING to grow " + nodes[i]) ;
+	// 		//update value of property
+	// 		if(dist[prop] < 0)
+	// 		{
+	// 			circle[prop] -=1;
+	// 		}
+	// 		else if(dist[prop] > 0)
+	// 		{
+	// 			circle[prop] +=1;
+	// 		}
 
-	}
-	function shrinkNodes(){//removes radius and mass to selected nodes
-		for(var i = 0; i < players.length; i++){
-			if (players[i].radius >= 60){
-				players[i].radius += -.1;
-				players[i].mass += -.1;
-				drawNodes(players[i]);
-			}
-		}
+	// 		if(circle[prop] != goal[prop]){
+	// 			requestAnimationFrame(step);
+	// 		}
+	// 	};
 
-		
-		console.log("i am TRYING to shrink " + players[i]) ;
-
-	}
-	function animate(){
-		requestAnimationFrame(animate);
-		growNodes();
-
-	}
-
-	//animation function for node splitting
-	function splitNode(x, y, original){
-		oX = Math.floor(original.x);
-		oY = Math.floor(original.y);
-
-		
-		console.log('split node is working ');
-		
-		var node = {
-			x:x,
-			y:y,
-			radius: selectedNode.radius,
-			fillColor: selectedNode.fillColor,
-			borderColor: selectedNode.borderColor,
-			border: selectedNode.border,
-			index: selectedNode.index
-		};
-
-		drawNodes(node);
-		if(x < oX && y < oY){
-			x+=1;
-			y+=1;
-		}
-		else if(x < oX && y > oY){
-			x+=1;
-			y-=1;
-		}
-		else if(x > oX && y < oY){
-			x-=1;
-			y+=1;
-		}
-		else if(x > oX && y > oY){
-			x-=1;
-			y-=1;
-		}
-		else if(x == oX && y < oY){
-			y+=1;
-		}
-		else if(x == oX && y > oY){
-			y-=1;
-		}
-		else if(x < oX && y == oY){
-			x+=1;
-		}
-		else if(x > oX && y == oY){
-			x-=1;
-		}
-
-		
-		if(x != oX && y != oY) {
-			setTimeout(splitNode(x,y,original), 2000);
-		}
-
-		// redrawCanvas();	
-			
-	}
-
+	// 	return step();
+	// }
 //=================== GAME LOOP ================== //	
 	//draw grid for the first time
 	// function animLoop(){
@@ -402,18 +260,45 @@ window.onload = function(){
 //=================== SOCKET.IO ================== //	
 
 socket.on('board update', function(grid) {
-    console.log("Board update received!");
+
+    // console.log(nodes);
+    // console.log(grid);
     nodes = grid;
     redrawCanvas();
 });
 
-socket.on('player list', function(players) {
+socket.on('player list', function(users) {
     // Received player list update
     // TODO: do something with it
-    console.log("Got a list of players: ", players);
+    players = users;
+   	currentPlayer = players[players.length-1];
+
+});
+
+// socket.on('distance', function(distance){
+
+// 	animate('x',distance,1000);
+// 	animate('y',distance,1000);
+// });
+
+socket.on('selectedNode', function(node){
+	selectedNode = node;
+	// circle = {
+	// 		x: selectedNode.x + selectedNode.scaleX,
+	// 		y: selectedNode.y + selectedNode.scaleY,
+	// 		scaleX: selectedNode.scaleX,
+	// 		scaleY: selectedNode.scaleY,
+	// 		borderColor: selectedNode.borderColor,
+	// 		fillColor: selectedNode.fillColor,
+	// 		radius: selectedNode.radius/2,
+	// 		border: 8
+	// };
+	// console.log('x: '+circle.x);
+	// console.log('y: '+circle.y);
+
 });
 
 
-gameLoop();
 //==================== end of window.onload	=======================//
 };
+
