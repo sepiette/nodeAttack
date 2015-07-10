@@ -8,6 +8,7 @@ var SAT = require('sat');
 
 var selectedNode = undefined;
 var sendNode = undefined;
+
 var ct = 0;
 
 var circles = [];
@@ -20,6 +21,7 @@ var xsize = 14;
 
 var grid = [];
 var users = [];
+var currentUser;
 
 for (var y = 0; y < ysize; y++) {
     for (var x = 0; x < xsize; x++) {
@@ -42,7 +44,7 @@ function euclidDistance(p1, p2){
     return Math.sqrt(Math.pow(p2.x - p1.x,2) + Math.pow(p2.y-p1.y,2));
 }
 
-
+//check if click in circle function
 function checkInCircle(mouse){
         var n = 0;
         var hit = false;
@@ -96,8 +98,8 @@ function highlightClickedCircle(index){
                 scaleX: grid[index].scaleX,
                 scaleY: grid[index].scaleY,
                 radius: grid[index].radius+(selectedNode.radius/2),
-                fillColor: '#7b9ae4',
-                borderColor: '#7b9ae4',
+                fillColor: currentUser.color,
+                borderColor: currentUser.color,
                 border: 8
             };
 
@@ -120,8 +122,8 @@ function highlightClickedCircle(index){
             scaleX: grid[index].scaleX,
             scaleY: grid[index].scaleY,
             radius: grid[index].radius,
-            fillColor: '#7b9ae4',
-            borderColor: '#7b9ae4',
+            fillColor: currentUser.color,
+            borderColor: currentUser.color,
             border: 8
         };
         grid[index] = selectedNode;
@@ -145,6 +147,19 @@ function collides(newCircle, circles) {
 	return false;
 }
 
+//Enter Game Function
+function enterGame(player){
+    users.push(player);
+        player.id = users.indexOf(player);
+        users[player.id] = player; 
+        currentUser = player;
+        
+        console.log("Player " + player.name + " entered the game.");
+        
+        var randNum = Math.floor(Math.random()*grid.length);
+        grid[randNum].fillColor = player.color;
+        grid[randNum].borderColor = player.color;
+}
 
 
 app.use(express.static(__dirname + '/../client'));
@@ -167,9 +182,11 @@ io.on('connection', function(socket) {
     });
     socket.on('join game', function(player) {
         //TODO: validation. Everything here trusts the client completely.
+
+        enterGame(player);
+
         users.push(player);
         socket.attached_player = player;
-        console.log("Player " + player.name + " entered the game.");
         io.sockets.emit('player list', users);
         socket.on('board update', function() {
             socket.emit('board update', grid);
@@ -188,7 +205,6 @@ io.on('connection', function(socket) {
 
         socket.on('add scale', function(nodes){ 
             grid = nodes;
-            //socket.emit('board update', grid);
         });
 
         //check to see if click happened in node
