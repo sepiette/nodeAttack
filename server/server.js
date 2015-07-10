@@ -147,6 +147,19 @@ function collides(newCircle, circles) {
 	return false;
 }
 
+//Enter Game Function
+function enterGame(player){
+    users.push(player);
+        player.id = users.indexOf(player);
+        users[player.id] = player; 
+        currentUser = player;
+        
+        console.log("Player " + player.name + " entered the game.");
+        
+        var randNum = Math.floor(Math.random()*grid.length);
+        grid[randNum].fillColor = player.color;
+        grid[randNum].borderColor = player.color;
+}
 
 
 app.use(express.static(__dirname + '/../client'));
@@ -161,16 +174,8 @@ io.on('connection', function(socket) {
     });
     socket.on('join game', function(player) {
         //TODO: validation. Everything here trusts the client completely.
-        users.push(player);
-        player.id = users.indexOf(player);
-        users[player.id] = player; 
-        currentUser = player;
 
-        console.log("Player " + player.name + " entered the game.");
-        var randNum = Math.floor(Math.random()*grid.length);
-        grid[randNum].fillColor = player.color;
-        grid[randNum].borderColor = player.color;
-
+        enterGame(player);
         io.sockets.emit('board update', grid);
 
         socket.on('board update', function() {
