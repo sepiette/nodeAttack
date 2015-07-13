@@ -93,11 +93,11 @@ function getDistance(selectedNode, sendNode){
 }
 //check mass function
 function compareMass(index, select, socket){
-
+var sendNode;
    if(select.radius/2 >= minRad){
        //if it is not a neutral node or your own
         if (grid[index].owner!= -1 && grid[index].owner != select.owner){
-                if ((select.radius/2) >= grid[index].radius/2){
+                if ((select.radius/2) > grid[index].radius/2){
                     socket.attached_player.sendNode = {
                             id: grid[index].id,
                             x: grid[index].x,
@@ -110,8 +110,9 @@ function compareMass(index, select, socket){
                             owner: socket.attached_player.id,
                             border: 8
                         };
-                    var sendNode = socket.attached_player.sendNode;
+                    sendNode = socket.attached_player.sendNode;
                     users[grid[index].owner].userNodes.splice(users[grid[index].owner].userNodes.indexOf(sendNode.id),1);
+                    socket.attached_player.userNodes.push(sendNode.id);
                 }
                 else if(select.radius/2 < grid[index].radius/2){
                     socket.attached_player.sendNode = {
@@ -126,6 +127,22 @@ function compareMass(index, select, socket){
                             owner: grid[index].owner,
                             border: 8
                         };
+                }
+                else if(select.radius/2 == grid[index].radius/2){
+                    socket.attached_player.sendNode = {
+                            id: grid[index].id,
+                            x: grid[index].x,
+                            y: grid[index].y,
+                            scaleX: grid[index].scaleX,
+                            scaleY: grid[index].scaleY,
+                            radius: 1,
+                            fillColor: neutralColor,
+                            borderColor: neutralColor,
+                            owner: -1,
+                            border: 8
+                        };
+                    sendNode = socket.attached_player.sendNode;
+                    users[grid[index].owner].userNodes.splice(users[grid[index].owner].userNodes.indexOf(sendNode.id),1);
                 }
         }
             
@@ -142,6 +159,8 @@ function compareMass(index, select, socket){
                     owner: socket.attached_player.id,
                     border: 8
             };
+            sendNode = socket.attached_player.sendNode;
+            socket.attached_player.userNodes.push(sendNode.id);
         }
     }
     return socket.attached_player.sendNode;
@@ -151,6 +170,7 @@ function highlightClickedCircle(index, socket){
     var newNode;
 
     if(typeof(socket.attached_player.selectedNode) !== "undefined"){
+        //if user selects a node to capture
         if(index !== socket.attached_player.selectedNode.id){
             
             //compare mass of two nodes to make comparison
@@ -165,8 +185,7 @@ function highlightClickedCircle(index, socket){
             grid[socket.attached_player.selectedNode.id] = socket.attached_player.selectedNode;
 
             //add new node index to list of user nodes
-            if (typeof(newNode) !== "undefined"){
-                socket.attached_player.userNodes.push(newNode.id);
+            if (typeof(newNode) !== "undefined"){          
                 users[socket.attached_player.id] = socket.attached_player;
                 grid[index] = newNode;
             }
@@ -174,6 +193,16 @@ function highlightClickedCircle(index, socket){
             //get distance between nodes
             //getDistance(selectedNode, newNode);  
            
+            socket.attached_player.selectedNode = undefined;
+        }
+        
+        //else they de-select the original selected node
+        else{
+
+            //get rid of border on selected node
+            socket.attached_player.selectedNode.borderColor = socket.attached_player.color;
+            grid[socket.attached_player.selectedNode.id] = socket.attached_player.selectedNode;
+
             socket.attached_player.selectedNode = undefined;
         }
     }
