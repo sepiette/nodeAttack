@@ -89,7 +89,6 @@ function compareMass(index, select, socket){
 
    if(select.radius/2 >= minRad){
        //if it is not a neutral node or your own
-       var sendNode;
         if (grid[index].owner!= -1 && grid[index].owner != select.owner){
                 if ((select.radius/2) >= grid[index].radius/2){
                     socket.attached_player.sendNode = {
@@ -98,14 +97,13 @@ function compareMass(index, select, socket){
                             y: grid[index].y,
                             scaleX: grid[index].scaleX,
                             scaleY: grid[index].scaleY,
-                            radius: grid[index].radius + (select.radius/2),
+                            radius: Math.floor(grid[index].radius + (select.radius/2)),
                             fillColor: socket.attached_player.color,
                             borderColor: socket.attached_player.color,
                             owner: socket.attached_player.id,
                             border: 8
                         };
-                        sendNode = socket.attached_player.sendNode;
-                    console.log(users[sendNode.owner].userNodes);
+                    var sendNode = socket.attached_player.sendNode;
                     users[grid[index].owner].userNodes.splice(users[grid[index].owner].userNodes.indexOf(sendNode.id),1);
                 }
                 else if(select.radius/2 < grid[index].radius/2){
@@ -115,7 +113,7 @@ function compareMass(index, select, socket){
                             y: grid[index].y,
                             scaleX: grid[index].scaleX,
                             scaleY: grid[index].scaleY,
-                            radius: grid[index].radius - (select.radius/2),
+                            radius: Math.floor(grid[index].radius - (select.radius/2)),
                             fillColor: grid[index].fillColor,
                             borderColor: grid[index].borderColor,
                             owner: grid[index].owner,
@@ -131,17 +129,14 @@ function compareMass(index, select, socket){
                     y: grid[index].y,
                     scaleX: grid[index].scaleX,
                     scaleY: grid[index].scaleY,
-                    radius: grid[index].radius + (select.radius/2),
+                    radius: Math.floor(grid[index].radius + (select.radius/2)),
                     fillColor: socket.attached_player.color,
                     borderColor: socket.attached_player.color,
                     owner: socket.attached_player.id,
                     border: 8
             };
-            sendNode = socket.attached_player.sendNode;
-            console.log(users[sendNode.owner].userNodes);
         }
     }
-    console.log('rad size'+ select.radius);
     return socket.attached_player.sendNode;
 }
 //highlight circle function
@@ -155,7 +150,7 @@ function highlightClickedCircle(index, socket){
             newNode = compareMass(index, socket.attached_player.selectedNode, socket);
             
             if(socket.attached_player.selectedNode.radius >= minRad){
-                socket.attached_player.selectedNode.radius = socket.attached_player.selectedNode.radius/2;
+                socket.attached_player.selectedNode.radius = Math.floor(socket.attached_player.selectedNode.radius/2);
             }
             
             //get rid of border on selected node
@@ -170,9 +165,7 @@ function highlightClickedCircle(index, socket){
             }
 
             //get distance between nodes
-            //getDistance(selectedNode, newNode);
-
-            
+            //getDistance(selectedNode, newNode);  
            
             socket.attached_player.selectedNode = undefined;
         }
@@ -227,14 +220,18 @@ function enterGame(player, socket){
     
     console.log("Player " + player.name + " entered the game.");
 
+
     var randNum = Math.floor(Math.random()*grid.length);
     
+    while(grid[randNum].fillColor != neutralColor){
+        console.log('node is already taken');
+        randNum = Math.floor(Math.random()*grid.length);
+    }
     // TODO: Intelligently pick a random node that isn't already taken
     socket.attached_player.userNodes.push(randNum);
     grid[randNum].fillColor = socket.attached_player.color;
     grid[randNum].borderColor = socket.attached_player.color;
     grid[randNum].owner = socket.attached_player.id;
-    console.log(users);
     
 }
 
