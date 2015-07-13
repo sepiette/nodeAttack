@@ -70,8 +70,7 @@ function checkInCircle(mouse){
             {
                 n++;
             }
-        } 
-        // return hit;      
+        }     
 }
 
 
@@ -93,7 +92,7 @@ function getDistance(selectedNode, sendNode){
 }
 //check mass function
 function compareMass(index, select, socket){
-var sendNode;
+    var sendNode;
    if(select.radius/2 >= minRad){
        //if it is not a neutral node or your own
         if (grid[index].owner!= -1 && grid[index].owner != select.owner){
@@ -171,7 +170,9 @@ function highlightClickedCircle(index, socket){
 
     if(typeof(socket.attached_player.selectedNode) !== "undefined"){
         //if user selects a node to capture
-        if(index !== socket.attached_player.selectedNode.id){
+        if(index !== socket.attached_player.selectedNode.id && 
+            (Math.abs(grid[index].scaleX - socket.attached_player.selectedNode.scaleX) <=100 &&
+            Math.abs(grid[index].scaleY - socket.attached_player.selectedNode.scaleY) <=100)){
             
             //compare mass of two nodes to make comparison
             newNode = compareMass(index, socket.attached_player.selectedNode, socket);
@@ -195,7 +196,7 @@ function highlightClickedCircle(index, socket){
            
             socket.attached_player.selectedNode = undefined;
         }
-        
+
         //else they de-select the original selected node
         else{
 
