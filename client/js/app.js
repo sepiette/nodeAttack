@@ -80,6 +80,7 @@ window.onload = function(){
 		y: (height/2),
 		screenWidth: width,
 		screenHeight: height,
+		userNodes:[],
 		color: nodeColors[Math.floor(Math.random()*(nodeColors.length))]
 	};
 
