@@ -263,8 +263,8 @@ io.on('connection', function(socket) {
             grid[nodes[1]].radius /= 2;
             io.sockets.emit('board update', grid);
         });
-        socket.emit('board update', grid);
-        socket.emit('player list', users);
+        io.sockets.emit('board update', grid);
+        io.sockets.emit('player list', users);
 
         socket.on('add scale', function(nodes){ 
             grid = nodes;
