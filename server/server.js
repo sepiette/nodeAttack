@@ -11,7 +11,7 @@ var minRad = 5;
 
 var ct = 0;
 
-
+var MAX_REACH = 200;
 var MAX_SIZE_TO_GROW = 25;
 var MAX_SIZE_BEFORE_DECAY = 40;
 
@@ -171,8 +171,8 @@ function highlightClickedCircle(index, socket){
     if(typeof(socket.attached_player.selectedNode) !== "undefined"){
         //if user selects a node to capture
         if(index !== socket.attached_player.selectedNode.id && 
-            (Math.abs(grid[index].scaleX - socket.attached_player.selectedNode.scaleX) <=100 &&
-            Math.abs(grid[index].scaleY - socket.attached_player.selectedNode.scaleY) <=100)){
+            (Math.abs(grid[index].scaleX - socket.attached_player.selectedNode.scaleX) <=MAX_REACH &&
+            Math.abs(grid[index].scaleY - socket.attached_player.selectedNode.scaleY) <=MAX_REACH)){
             
             //compare mass of two nodes to make comparison
             newNode = compareMass(index, socket.attached_player.selectedNode, socket);
