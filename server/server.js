@@ -91,7 +91,7 @@ function getDistance(selectedNode, sendNode){
 function compareMass(index, select){
     console.log('rad bigger: '+ ((select.radius/2) >= grid[index].radius));
     console.log('rad smaller: '+ ((select.radius/2) < grid[index].radius));
-   if(select.radius > minRad){
+   if(select.radius/2 >= minRad){
        //if it is not a neutral node or your own
         if (grid[index].fillColor != neutralColor && grid[index].fillColor != select.fillColor){
                 
@@ -152,8 +152,9 @@ function highlightClickedCircle(index){
             newNode = compareMass(index, selectedNode);
             // console.log(newNode);
             
-            if(selectedNode.radius > minRad){
-                selectedNode.radius = selectedNode.radius/2;
+            if(selectedNode.radius/2 >= minRad){
+                selectedNode.radius = Math.floor(selectedNode.radius/2);
+                console.log(selectedNode.radius);
             }
             
             selectedNode.borderColor = currentUser.color;
@@ -178,7 +179,7 @@ function highlightClickedCircle(index){
     else{
         //if the index is in the list of user nodes, it can be selected
         if(userNodes.indexOf(index) != -1){
-            if(grid[index].radius > minRad){
+            if(grid[index].radius/2 >= minRad){
                 selectedNode = {
                     id: index,
                     x: grid[index].x,

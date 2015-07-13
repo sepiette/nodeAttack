@@ -176,12 +176,18 @@ function startGame(){
 	    graph.globalAlpha = 1;
 
 	}
+	//draw grid nodes text
+	function drawNodeText(node){
+		graph.font = "14px Arial";
+		graph.fillStyle = "#fff";
+		graph.fillText(node.radius,(node.scaleX), (node.y+node.scaleY+5));
+	}
 	//draw nodes on grid
 	function drawGridNodes(){
 		var count = 0;
 		for(n in nodes){
 			drawNodes(nodes[n], scaleX,scaleY);
-			
+			drawNodeText(nodes[n]);
 			if(count == 13){
 				scaleY+=100;
 				scaleX = 100;
