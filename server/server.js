@@ -11,6 +11,13 @@ var minRad = 5;
 
 var ct = 0;
 
+
+var MAX_SIZE_TO_GROW = 25;
+var MAX_SIZE_BEFORE_DECAY = 40;
+
+var GROW_RATE = 1;
+var DECAY_RATE = 0.5;
+
 var circles = [];
 var V = SAT.Vector;
 var C = SAT.Circle;
@@ -291,7 +298,17 @@ io.on('connection', function(socket) {
     });
 });
 
-
+var grow = setInterval(function() {
+    for (var i = 0; i < grid.length; i++) {
+        if (grid[i].radius < MAX_SIZE_TO_GROW) {
+            grid[i].radius += GROW_RATE;
+        }
+        else if (grid[i].radius > MAX_SIZE_BEFORE_DECAY) {
+            grid[i].radius -= DECAY_RATE; // Decay
+        }
+    }
+    io.sockets.emit('board update', grid);
+}, 1000);
 
 http.listen(3000, function() {
     console.log("Listening on 0.0.0.0:3000");
