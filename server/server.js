@@ -6,8 +6,6 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var SAT = require('sat');
 
-var selectedNode = undefined;
-var sendNode = undefined;
 var neutralColor = '#888';
 var minRad = 5;
 
@@ -23,8 +21,6 @@ var xsize = 14;
 
 var grid = [];
 var users = [];
-var currentUser;
-var userNodes;
 
 for (var y = 0; y < ysize; y++) {
     for (var x = 0; x < xsize; x++) {
@@ -88,7 +84,7 @@ function getDistance(selectedNode, sendNode){
 
 }
 //check mass function
-function compareMass(index, select){
+function compareMass(index, select, socket){
     console.log('rad bigger: '+ ((select.radius/2) >= grid[index].radius));
     console.log('rad smaller: '+ ((select.radius/2) < grid[index].radius));
    if(select.radius/2 >= minRad){
@@ -96,20 +92,20 @@ function compareMass(index, select){
         if (grid[index].fillColor != neutralColor && grid[index].fillColor != select.fillColor){
                 
                 if ((select.radius/2) >= grid[index].radius/2){
-                    sendNode = {
+                    socket.attached_player.sendNode = {
                             id: grid[index].id,
                             x: grid[index].x,
                             y: grid[index].y,
                             scaleX: grid[index].scaleX,
                             scaleY: grid[index].scaleY,
                             radius: grid[index].radius + (select.radius/2),
-                            fillColor: currentUser.color,
-                            borderColor: currentUser.color,
+                            fillColor: socket.attached_player.color,
+                            borderColor: socket.attached_player.color,
                             border: 8
                         };
                 }
                 else if(select.radius/2 < grid[index].radius/2){
-                    sendNode = {
+                    socket.attached_player.sendNode = {
                             id: grid[index].id,
                             x: grid[index].x,
                             y: grid[index].y,
@@ -124,46 +120,45 @@ function compareMass(index, select){
         }
             
         else{
-            sendNode = {
+            socket.attached_player.sendNode = {
                     id: grid[index].id,
                     x: grid[index].x,
                     y: grid[index].y,
                     scaleX: grid[index].scaleX,
                     scaleY: grid[index].scaleY,
                     radius: grid[index].radius + (select.radius/2),
-                    fillColor: currentUser.color,
-                    borderColor: currentUser.color,
+                    fillColor: socket.attached_player.color,
+                    borderColor: socket.attached_player.color,
                     border: 8
             };
             
         }
     }
     console.log('rad size'+ select.radius);
-    return sendNode;
+    return socket.attached_player.sendNode;
 }
 //highlight circle function
-function highlightClickedCircle(index){
+function highlightClickedCircle(index, socket){
     var newNode;
 
-    if(selectedNode != undefined){
-        if(index != selectedNode.id){
+    if(typeof(socket.attached_player.selectedNode) !== "undefined"){
+        if(index !== socket.attached_player.selectedNode.id){
             
             //compare mass of two nodes to make comparison
-            newNode = compareMass(index, selectedNode);
+            newNode = compareMass(index, socket.attached_player.selectedNode, socket);
             // console.log(newNode);
             
-            if(selectedNode.radius/2 >= minRad){
-                selectedNode.radius = Math.floor(selectedNode.radius/2);
-                console.log(selectedNode.radius);
+            if(socket.attached_player.selectedNode.radius >= minRad){
+                socket.attached_player.selectedNode.radius = socket.attached_player.selectedNode.radius/2;
             }
             
-            selectedNode.borderColor = currentUser.color;
+            socket.attached_player.selectedNode.borderColor = socket.attached_player.color;
 
-            grid[selectedNode.id] = selectedNode;
+            grid[socket.attached_player.selectedNode.id] = socket.attached_player.selectedNode;
 
             //add new node index to list of user nodes
-            if (newNode != undefined){
-                userNodes.push(newNode.id);
+            if (typeof(newNode) !== "undefined"){
+                socket.attached_player.userNodes.push(newNode.id);
                 grid[index] = newNode;
             }
 
@@ -172,27 +167,27 @@ function highlightClickedCircle(index){
 
             
            
-            selectedNode = undefined;
+            socket.attached_player.selectedNode = undefined;
         }
     }
 
     else{
         //if the index is in the list of user nodes, it can be selected
-        if(userNodes.indexOf(index) != -1){
-            if(grid[index].radius/2 >= minRad){
-                selectedNode = {
+        if(socket.attached_player.userNodes.indexOf(index) != -1){
+            if(grid[index].radius > minRad){
+                socket.attached_player.selectedNode = {
                     id: index,
                     x: grid[index].x,
                     y: grid[index].y,
                     scaleX: grid[index].scaleX,
                     scaleY: grid[index].scaleY,
                     radius: grid[index].radius,
-                    fillColor: currentUser.color,
+                    fillColor: socket.attached_player.color,
                     borderColor: '#000',
                     border: 8
                 };
-                grid[index] = selectedNode;
-                io.emit('selectedNode', selectedNode);
+                grid[index] = socket.attached_player.selectedNode;
+                io.emit('selectedNode', socket.attached_player.selectedNode);
             }
             
         }   
@@ -216,19 +211,19 @@ function collides(newCircle, circles) {
 }
 
 //Enter Game Function
-function enterGame(player){
+function enterGame(player, socket){
+    socket.attached_player = player;
     users.push(player);
-        player.id = users.indexOf(player);
-        users[player.id] = player; 
-        currentUser = player;
-        userNodes = [];
-        
-        console.log("Player " + player.name + " entered the game.");
-        
-        var randNum = Math.floor(Math.random()*grid.length);
-        userNodes.push(randNum);
-        grid[randNum].fillColor = player.color;
-        grid[randNum].borderColor = player.color;
+    player.id = users.indexOf(player);
+    player.userNodes = [];
+
+    console.log("Player " + player.name + " entered the game.");
+
+    var randNum = Math.floor(Math.random()*grid.length);
+    // TODO: Intelligently pick a random node that isn't already taken
+    player.userNodes.push(randNum);
+    grid[randNum].fillColor = player.color;
+    grid[randNum].borderColor = player.color;
 }
 
 
@@ -253,10 +248,8 @@ io.on('connection', function(socket) {
     socket.on('join game', function(player) {
         //TODO: validation. Everything here trusts the client completely.
 
-        enterGame(player);
+        enterGame(player, socket);
 
-        users.push(player);
-        socket.attached_player = player;
         io.sockets.emit('player list', users);
         socket.on('board update', function() {
             socket.emit('board update', grid);
@@ -281,7 +274,7 @@ io.on('connection', function(socket) {
         socket.on('click',function(mouse){
             var index = checkInCircle(mouse);
             if(typeof(index) !== 'undefined'){
-                highlightClickedCircle(index);
+                highlightClickedCircle(index, socket);
                 io.sockets.emit('board update', grid);
             }
             
