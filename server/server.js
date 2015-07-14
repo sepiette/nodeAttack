@@ -11,11 +11,14 @@ var minRad = 5;
 
 var ct = 0;
 
-var MAX_REACH = 200;
-var MAX_SIZE_TO_GROW = 25;
+var MAX_START = 30;
+var MAX_REACH = 500;
+var MAX_SIZE_TO_GROW = 40;
+var MAX_SIZE_TO_GROW_NEUTRAL = 15;
 var MAX_SIZE_BEFORE_DECAY = 40;
 
 var GROW_RATE = 1;
+var GROW_RATE_NEUTRAL = 0.5;
 var DECAY_RATE = 0.5;
 
 var circles = [];
@@ -35,7 +38,7 @@ for (var y = 0; y < ysize; y++) {
             id: ct,
             x: x,
             y: y,
-            radius: 20,
+            radius: Math.ceil(Math.random()*(10-5)+5),
             fillColor: neutralColor,
             borderColor: neutralColor,
             owner: -1,
@@ -93,27 +96,34 @@ function getDistance(selectedNode, sendNode){
 //check mass function
 function compareMass(index, select, socket){
     var sendNode;
+    var difference;
    if(select.radius/2 >= minRad){
        //if it is not a neutral node or your own
-        if (grid[index].owner!= -1 && grid[index].owner != select.owner){
-                if ((select.radius/2) > grid[index].radius/2){
+        if (grid[index].owner != select.owner){
+                if ((select.radius/2) > grid[index].radius){
+                    var difference = (select.radius/2) - grid[index].radius;
+
                     socket.attached_player.sendNode = {
                             id: grid[index].id,
                             x: grid[index].x,
                             y: grid[index].y,
                             scaleX: grid[index].scaleX,
                             scaleY: grid[index].scaleY,
-                            radius: Math.floor(grid[index].radius + (select.radius/2)),
+                            radius: Math.floor(difference),
                             fillColor: socket.attached_player.color,
                             borderColor: socket.attached_player.color,
                             owner: socket.attached_player.id,
                             border: 8
                         };
+
                     sendNode = socket.attached_player.sendNode;
-                    users[grid[index].owner].userNodes.splice(users[grid[index].owner].userNodes.indexOf(sendNode.id),1);
+                    if(grid[index].owner != -1){
+                        users[grid[index].owner].userNodes.splice(users[grid[index].owner].userNodes.indexOf(sendNode.id),1);
+                    }
+                    
                     socket.attached_player.userNodes.push(sendNode.id);
                 }
-                else if(select.radius/2 < grid[index].radius/2){
+                else if(select.radius/2 < grid[index].radius){
                     socket.attached_player.sendNode = {
                             id: grid[index].id,
                             x: grid[index].x,
@@ -127,7 +137,7 @@ function compareMass(index, select, socket){
                             border: 8
                         };
                 }
-                else if(select.radius/2 == grid[index].radius/2){
+                else if(select.radius/2 == grid[index].radius){
                     socket.attached_player.sendNode = {
                             id: grid[index].id,
                             x: grid[index].x,
@@ -141,7 +151,9 @@ function compareMass(index, select, socket){
                             border: 8
                         };
                     sendNode = socket.attached_player.sendNode;
-                    users[grid[index].owner].userNodes.splice(users[grid[index].owner].userNodes.indexOf(sendNode.id),1);
+                    if(grid[index].owner != -1){
+                        users[grid[index].owner].userNodes.splice(users[grid[index].owner].userNodes.indexOf(sendNode.id),1);
+                    }
                 }
         }
             
@@ -268,6 +280,7 @@ function enterGame(player, socket){
     socket.attached_player.userNodes.push(randNum);
     grid[randNum].fillColor = socket.attached_player.color;
     grid[randNum].borderColor = socket.attached_player.color;
+    grid[randNum].radius = MAX_START;
     grid[randNum].owner = socket.attached_player.id;
     
 }
@@ -330,15 +343,18 @@ io.on('connection', function(socket) {
 
 var grow = setInterval(function() {
     for (var i = 0; i < grid.length; i++) {
-        if (grid[i].radius < MAX_SIZE_TO_GROW) {
+        if (grid[i].owner !=-1 && grid[i].radius < MAX_SIZE_TO_GROW ) {
             grid[i].radius += GROW_RATE;
+        }
+        else if(grid[i].owner == -1 && grid[i].radius < MAX_SIZE_TO_GROW_NEUTRAL){
+            grid[i].radius += GROW_RATE_NEUTRAL;
         }
         else if (grid[i].radius > MAX_SIZE_BEFORE_DECAY) {
             grid[i].radius -= DECAY_RATE; // Decay
         }
     }
     io.sockets.emit('board update', grid);
-}, 1000);
+}, 800);
 
 http.listen(3000, function() {
     console.log("Listening on 0.0.0.0:3000");
