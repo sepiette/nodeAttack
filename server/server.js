@@ -5,6 +5,7 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var SAT = require('sat');
+var _ = require('lodash');
 
 var neutralColor = '#888';
 var minRad = 5;
@@ -21,6 +22,8 @@ var GROW_RATE = 1;
 var GROW_RATE_NEUTRAL = 0.5;
 var DECAY_RATE = 0.5;
 
+var TRAVEL_RATE = 0.2;
+
 var circles = [];
 var V = SAT.Vector;
 var C = SAT.Circle;
@@ -30,6 +33,7 @@ var xsize = 14;
 
 
 var grid = [];
+var units = [];
 var users = [];
 
 for (var y = 0; y < ysize; y++) {
@@ -94,51 +98,50 @@ function getDistance(selectedNode, sendNode){
 
 }
 //check mass function
-function compareMass(index, select, socket){
+function compareMass(index, select){
+    var user = _.findWhere(users, {'id': select.owner});
     var sendNode;
     var difference;
-   if(select.radius/2 >= minRad){
+   if(select.radius >= minRad){
        //if it is not a neutral node or your own
         if (grid[index].owner != select.owner){
-                if ((select.radius/2) > grid[index].radius){
-                    var difference = (select.radius/2) - grid[index].radius;
+                if ((select.radius) > grid[index].radius){
+                    var difference = (select.radius) - grid[index].radius;
 
-                    socket.attached_player.sendNode = {
+                    sendNode = {
                             id: grid[index].id,
                             x: grid[index].x,
                             y: grid[index].y,
                             scaleX: grid[index].scaleX,
                             scaleY: grid[index].scaleY,
                             radius: Math.floor(difference),
-                            fillColor: socket.attached_player.color,
-                            borderColor: socket.attached_player.color,
-                            owner: socket.attached_player.id,
+                            fillColor: user.color,
+                            borderColor: user.color,
+                            owner: user.id,
                             border: 8
                         };
-
-                    sendNode = socket.attached_player.sendNode;
                     if(grid[index].owner != -1){
                         users[grid[index].owner].userNodes.splice(users[grid[index].owner].userNodes.indexOf(sendNode.id),1);
                     }
                     
-                    socket.attached_player.userNodes.push(sendNode.id);
+                    user.userNodes.push(sendNode.id);
                 }
-                else if(select.radius/2 < grid[index].radius){
-                    socket.attached_player.sendNode = {
+                else if(select.radius < grid[index].radius){
+                    sendNode = {
                             id: grid[index].id,
                             x: grid[index].x,
                             y: grid[index].y,
                             scaleX: grid[index].scaleX,
                             scaleY: grid[index].scaleY,
-                            radius: Math.floor(grid[index].radius - (select.radius/2)),
+                            radius: Math.floor(grid[index].radius - (select.radius)),
                             fillColor: grid[index].fillColor,
                             borderColor: grid[index].borderColor,
                             owner: grid[index].owner,
                             border: 8
                         };
                 }
-                else if(select.radius/2 == grid[index].radius){
-                    socket.attached_player.sendNode = {
+                else if(select.radius == grid[index].radius){
+                    sendNode = {
                             id: grid[index].id,
                             x: grid[index].x,
                             y: grid[index].y,
@@ -150,7 +153,6 @@ function compareMass(index, select, socket){
                             owner: -1,
                             border: 8
                         };
-                    sendNode = socket.attached_player.sendNode;
                     if(grid[index].owner != -1){
                         users[grid[index].owner].userNodes.splice(users[grid[index].owner].userNodes.indexOf(sendNode.id),1);
                     }
@@ -158,37 +160,54 @@ function compareMass(index, select, socket){
         }
             
         else{
-            socket.attached_player.sendNode = {
+            sendNode = {
                     id: grid[index].id,
                     x: grid[index].x,
                     y: grid[index].y,
                     scaleX: grid[index].scaleX,
                     scaleY: grid[index].scaleY,
-                    radius: Math.floor(grid[index].radius + (select.radius/2)),
-                    fillColor: socket.attached_player.color,
-                    borderColor: socket.attached_player.color,
-                    owner: socket.attached_player.id,
+                    radius: Math.floor(grid[index].radius + (select.radius)),
+                    fillColor: user.color,
+                    borderColor: user.color,
+                    owner: user.id,
                     border: 8
             };
-            sendNode = socket.attached_player.sendNode;
-            socket.attached_player.userNodes.push(sendNode.id);
+            user.userNodes.push(sendNode.id);
         }
     }
-    return socket.attached_player.sendNode;
+    return sendNode;
 }
+
+
+function sendUnits(node, destination){
+    units.push({
+        'owner': node.owner,
+        'color': node.fillColor,
+        'radius': Math.floor(node.radius/2),
+        'position': {
+            'x': node.x,
+            'y': node.y
+        },
+        'destination': {
+            'id': destination.id,
+            'x': destination.x,
+            'y': destination.y
+        }
+    });
+};
+
 //highlight circle function
 function highlightClickedCircle(index, socket){
-    var newNode;
-
     if(typeof(socket.attached_player.selectedNode) !== "undefined"){
         //if user selects a node to capture
-        if(index !== socket.attached_player.selectedNode.id && 
+        if(index !== socket.attached_player.selectedNode.id &&
             (Math.abs(grid[index].scaleX - socket.attached_player.selectedNode.scaleX) <=MAX_REACH &&
             Math.abs(grid[index].scaleY - socket.attached_player.selectedNode.scaleY) <=MAX_REACH)){
             
-            //compare mass of two nodes to make comparison
-            newNode = compareMass(index, socket.attached_player.selectedNode, socket);
-            
+            // //compare mass of two nodes to make comparison
+            // newNode = compareMass(index, socket.attached_player.selectedNode, socket);
+
+            sendUnits(socket.attached_player.selectedNode, grid[index]);
             if(socket.attached_player.selectedNode.radius >= minRad){
                 socket.attached_player.selectedNode.radius = Math.floor(socket.attached_player.selectedNode.radius/2);
             }
@@ -197,14 +216,14 @@ function highlightClickedCircle(index, socket){
             socket.attached_player.selectedNode.borderColor = socket.attached_player.color;
             grid[socket.attached_player.selectedNode.id] = socket.attached_player.selectedNode;
 
-            //add new node index to list of user nodes
-            if (typeof(newNode) !== "undefined"){          
-                users[socket.attached_player.id] = socket.attached_player;
-                grid[index] = newNode;
-            }
+            // //add new node index to list of user nodes
+            // if (typeof(newNode) !== "undefined"){          
+            //     users[socket.attached_player.id] = socket.attached_player;
+            //     grid[index] = newNode;
+            // }
 
-            //get distance between nodes
-            //getDistance(selectedNode, newNode);  
+            // //get distance between nodes
+            // //getDistance(selectedNode, newNode);  
            
             socket.attached_player.selectedNode = undefined;
         }
@@ -260,6 +279,21 @@ function collides(newCircle, circles) {
 	return false;
 }
 
+function resetPlayerNodes(player){
+    player['userNodes'].forEach(function(node){
+        grid[node] = {
+            id: grid[node].id,
+            x: grid[node].x,
+            y: grid[node].y,
+            radius: grid[node].radius,
+            fillColor: neutralColor,
+            borderColor: neutralColor,
+            owner: -1,
+            border: 8
+        };
+    });
+}
+
 //Enter Game Function
 function enterGame(player, socket){
     socket.attached_player = player;
@@ -297,6 +331,7 @@ io.on('connection', function(socket) {
         console.log("User disconnected.");
         if (typeof(socket.attached_player) !== 'undefined') {
             console.log("Player " + socket.attached_player.name + " disconnected.");
+            resetPlayerNodes(socket.attached_player);
             users.splice(users.indexOf(socket.attached_player), 1); // Remove the player who disconnected from the array
             io.sockets.emit('player list', users);
         }
@@ -311,7 +346,7 @@ io.on('connection', function(socket) {
 
         io.sockets.emit('player list', users);
         socket.on('board update', function() {
-            socket.emit('board update', grid);
+            socket.emit('board update', grid, units);
         });
         socket.on('player list', function() {
             socket.emit('player list', users);
@@ -320,9 +355,9 @@ io.on('connection', function(socket) {
             console.log("Node click event fired");
             grid[nodes[0]].radius += grid[nodes[1]].radius / 2;
             grid[nodes[1]].radius /= 2;
-            io.sockets.emit('board update', grid);
+            io.sockets.emit('board update', grid, units);
         });
-        io.sockets.emit('board update', grid);
+        io.sockets.emit('board update', grid, units);
         io.sockets.emit('player list', users);
 
         socket.on('add scale', function(nodes){ 
@@ -334,7 +369,7 @@ io.on('connection', function(socket) {
             var index = checkInCircle(mouse);
             if(typeof(index) !== 'undefined'){
                 highlightClickedCircle(index, socket);
-                io.sockets.emit('board update', grid);
+                io.sockets.emit('board update', grid, units);
             }
             
         });
@@ -353,8 +388,45 @@ var grow = setInterval(function() {
             grid[i].radius -= DECAY_RATE; // Decay
         }
     }
-    io.sockets.emit('board update', grid);
+    io.sockets.emit('board update', grid, units);
 }, 800);
+
+var attack = setInterval(function(){
+    var j = units.length;
+    while(j--){
+        if(units[j].position.x!==units[j].destination.x || units[j].position.y!==units[j].destination.y){
+            var tempAngle = Math.abs(Math.atan((units[j].destination.y-units[j].position.y)/(units[j].destination.x-units[j].position.x)));
+            var tempHypotenuse = euclidDistance(units[j].position, units[j].destination);
+            if(tempHypotenuse-TRAVEL_RATE<=0){
+                units[j].position.x = units[j].destination.x;
+                units[j].position.y = units[j].destination.y;
+            } else{
+                if(units[j].position.x > units[j].destination.x){
+                    units[j].position.x = (units[j].destination.x) + (Math.cos(tempAngle) * (tempHypotenuse - TRAVEL_RATE));
+                } else{
+                    units[j].position.x = (units[j].destination.x) - (Math.cos(tempAngle) * (tempHypotenuse - TRAVEL_RATE));
+                }
+
+                if(units[j].position.y > units[j].destination.y){
+                    units[j].position.y = (units[j].destination.y) + (Math.sin(tempAngle) * (tempHypotenuse - TRAVEL_RATE));
+                } else{
+                    units[j].position.y = (units[j].destination.y) - (Math.sin(tempAngle) * (tempHypotenuse - TRAVEL_RATE));
+                }
+            }
+        } else{
+            var newNode = compareMass(units[j].destination.id, units[j]);
+
+            if (typeof(newNode) !== "undefined"){
+                grid[units[j].destination.id] = newNode;
+            }
+
+            units.splice(j, 1);
+        }
+    }
+
+    io.sockets.emit('board update', grid, units);
+}, 100);
+
 
 http.listen(3000, function() {
     console.log("Listening on 0.0.0.0:3000");

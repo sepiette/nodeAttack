@@ -88,6 +88,7 @@ window.onload = function(){
 	var circle;
 	var nodeDistance;
 	var nodes = [];
+	var units = [];
 	var players =[];
 	var currentPlayer;
 	var leaderboard = [];
@@ -138,23 +139,18 @@ function startGame(){
 
 //================== DRAWING FUNCTIONS ===================//
 	//draw circle function
-	function drawCircle(centerX, centerY, radius,scaleX,scaleY){
-		var theta = 0;
-		
-		var x =0;
-		var y=0;
-		nVerts = 30;
-
+	function drawCircle(centerX, centerY, radius){
 		graph.beginPath();
+		graph.arc(centerX, centerY, radius, 0, 2*Math.PI, false);
+		graph.stroke();
+		graph.fill();
+	}
 
-		for(var i = 0; i < nVerts; i++){
-			theta = (i/nVerts) * 2 * Math.PI;
-			x = scaleX+centerX + radius * Math.sin(theta);
-			y = scaleY+centerY + radius * Math.cos(theta);
-			graph.lineTo(x,y);
-		}
-
-		graph.closePath();
+	function drawCircle2(x, y, radius, color){
+		graph.strokeStyle = color;
+		graph.fillStyle = color;
+		graph.beginPath();
+		graph.arc(x*100, y*100, radius, 0, 2*Math.PI, false);
 		graph.stroke();
 		graph.fill();
 	}
@@ -166,7 +162,7 @@ function startGame(){
 			graph.lineWidth = node.border;
 			node.scaleX = scalex;
 			node.scaleY = scaley;
-			drawCircle(node.x, node.y, node.radius, scaleX, scaleY);			
+			drawCircle(node.x+scaleX, node.y+scaleY, node.radius, scaleX, scaleY);			
 	}
 
 	//draw grid function
@@ -190,18 +186,20 @@ function startGame(){
 	    graph.globalAlpha = 1;
 
 	}
+
 	//draw grid nodes text
 	function drawNodeText(node){
 		graph.font = "14px Arial";
 		graph.fillStyle = "#fff";
 		graph.fillText(node.radius,(node.scaleX), (node.y+node.scaleY+5));
 	}
+
 	//draw nodes on grid
 	function drawGridNodes(){
 		var count = 0;
 		for(n in nodes){
 			drawNodes(nodes[n], scaleX,scaleY);
-			drawNodeText(nodes[n]);
+			// drawNodeText(nodes[n]);
 			if(count == 13){
 				scaleY+=100;
 				scaleX = 100;
@@ -215,6 +213,14 @@ function startGame(){
 		}
 		socket.emit('add scale', nodes);
 	}
+
+	//draw units on grid
+	function drawUnitNodes(){
+		units.forEach(function(unit){
+			drawCircle2(unit.position.x+1, unit.position.y+1, unit.radius, unit.color);
+		});
+	}
+
 	//resize canvas
 	function redrawCanvas() {
 				width = window.innerWidth;
@@ -226,6 +232,7 @@ function startGame(){
 
 				drawGrid();
 				drawGridNodes();
+				drawUnitNodes();
 	}
 	
 	// //animation function for node splitting
@@ -281,8 +288,9 @@ function startGame(){
 socket.on('disconnect', function() {
 	stopGame();
 });
-socket.on('board update', function(grid) {
+socket.on('board update', function(grid, unitList) {
     nodes = grid;
+    units = unitList;
     redrawCanvas();
 });
 
@@ -292,11 +300,10 @@ socket.on('player list', function(users) {
 
     players = users;
    	currentPlayer = players[players.length-1];
-	console.log(players);
-	$('#playerlist').empty();
-	for (var i = 0; i < players.length; i++) {
-		$('#playerlist').append($('<li>' + players[i].name + '</li>'));
-	}
+		$('#playerlist').empty();
+		for (var i = 0; i < players.length; i++) {
+			$('#playerlist').append($('<li>' + players[i].name + '</li>'));
+		}
 });
 
 // socket.on('distance', function(distance){
