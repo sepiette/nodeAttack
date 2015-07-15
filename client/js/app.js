@@ -1,4 +1,4 @@
-
+// vim: tabstop=4:softtabstop=0:noexpandtab:shiftwidth=4
 
 var canvas = document.getElementById('grid');
 var graph = canvas.getContext("2d");
@@ -6,14 +6,25 @@ var graph = canvas.getContext("2d");
 //Game Variables
 var playerName;
 var playerNameInput = document.getElementById('playerNameInput');
-var socket;
+var socket = io();
+window.socket = socket;
 var KEY_ENTER = 13;
 var animLoopHandle;
 
-function startGame(){
+function stopGame() {
+	// For now, just hide everything.
 	document.getElementById('startMenuWrapper').style.opacity = 0;
-	document.getElementById('gameAreaWrapper').style.opacity = 1;
+	document.getElementById('startMenuWrapper').style.display = "none";
+	document.getElementById('gameAreaWrapper').style.opacity = 0;
+	document.getElementById('gameAreaWrapper').style.display = "none";
+	document.getElementById('playerlistwrapper').style.opacity = 0;
+	document.getElementById('playerlistwrapper').style.display = "none";
+
+
+	// Show the disconnect message.
+	$('#disconnectmessage').css('display', 'block');
 }
+
 // check if nick is valid alphanumeric characters (and underscores)
 function validName() {
     var regex = /^\w*$/;
@@ -31,6 +42,8 @@ window.onload = function(){
 	var xoffset = -gameWidth;
 	var yoffset = -gameHeight;
 
+	var scaleX = 100;
+	var scaleY = 100;
 
 	var canvasPos = {
 		x: canvas.offsetLeft,
@@ -43,6 +56,16 @@ window.onload = function(){
 	var gameStart = false;
 	var nodeColors = ['#5df4b7','#7b9ae4','#d12c7b','#b4e53f','#3a0d3f','#b5b4d3','#4541ee','#58c8e0','#fc8d05'];
 	
+	var requestAnimationFrame =  
+        window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        function(callback) {
+          return setTimeout(callback,1);
+        };
+
 	var playerConfig = {
 	    border: 6,
 	    textColor: '#FFFFFF',
@@ -57,18 +80,22 @@ window.onload = function(){
 		y: (height/2),
 		screenWidth: width,
 		screenHeight: height,
+		userNodes:[],
 		color: nodeColors[Math.floor(Math.random()*(nodeColors.length))]
 	};
 
-
-	var selectedNode = undefined;
+	var selectedNode;
+	var circle;
+	var nodeDistance;
 	var nodes = [];
 	var players =[];
+	var currentPlayer;
 	var leaderboard = [];
 	var target = {x: player.x, y: player.y};
 
 //====================== Event Listeners =====================//
 	window.addEventListener('resize', redrawCanvas, false);
+    console.log("Redrawing canvas");
 
 	btn.onclick = function () {
 
@@ -85,26 +112,35 @@ window.onload = function(){
 			x: e.pageX - canvasPos.x,
 			y: e.pageY - canvasPos.y
 		};
-		checkInCircle(mouse);
+		socket.emit('click',mouse);
+		//checkInCircle(mouse);
 	};
 //===================== CONNECT TO GAME FUNCTIONS ===============//
+function startGame(){
+	document.getElementById('startMenuWrapper').style.opacity = 0;
+	document.getElementById('startMenuWrapper').style.display = "none";
+	document.getElementById('gameAreaWrapper').style.opacity = 1;
+}
 	function connectPlayer(){
 		
-		player.id = Math.random()*10+1;
+		player.id = Math.floor(Math.random()*10+1);
 		playerName = playerNameInput.value.replace(/(<([^>]+)>)/ig, '');
 		player.name = playerName;
 		player.screenWidth = width;
 		player.screenHeight = height;
 		player.target = target;
 		gameStart = true;
-		console.log(player);
-		startGame();
+        socket.emit('join game', player);
+        socket.emit('player list');
+        startGame();
+        
 	}
 
 //================== DRAWING FUNCTIONS ===================//
 	//draw circle function
-	function drawCircle(centerX, centerY, radius){
+	function drawCircle(centerX, centerY, radius,scaleX,scaleY){
 		var theta = 0;
+		
 		var x =0;
 		var y=0;
 		nVerts = 30;
@@ -113,22 +149,24 @@ window.onload = function(){
 
 		for(var i = 0; i < nVerts; i++){
 			theta = (i/nVerts) * 2 * Math.PI;
-			x = centerX + radius * Math.sin(theta);
-			y = centerY + radius * Math.cos(theta);
-			graph.lineTo(x, y);
-
+			x = scaleX+centerX + radius * Math.sin(theta);
+			y = scaleY+centerY + radius * Math.cos(theta);
+			graph.lineTo(x,y);
 		}
+
 		graph.closePath();
 		graph.stroke();
 		graph.fill();
 	}
 
 	//draw nodes function
-	function drawNodes(node){
+	function drawNodes(node, scalex, scaley){
 			graph.strokeStyle = node.borderColor;
 			graph.fillStyle = node.fillColor;
 			graph.lineWidth = node.border;
-			drawCircle(node.x, node.y, node.radius);			
+			node.scaleX = scalex;
+			node.scaleY = scaley;
+			drawCircle(node.x, node.y, node.radius, scaleX, scaleY);			
 	}
 
 	//draw grid function
@@ -152,32 +190,30 @@ window.onload = function(){
 	    graph.globalAlpha = 1;
 
 	}
+	//draw grid nodes text
+	function drawNodeText(node){
+		graph.font = "14px Arial";
+		graph.fillStyle = "#fff";
+		graph.fillText(node.radius,(node.scaleX), (node.y+node.scaleY+5));
+	}
 	//draw nodes on grid
 	function drawGridNodes(){
-		if(nodes.length ==0)
-		{
-			for(var w = (height/ 18); w < 8*(width/9); w+=height/ 9){
-				for(var h=(height/ 18); h < 8*(height/9); h+= height / 9){
-					var node = {
-						x: w,
-						y: h,
-						radius: 20,
-						fillColor: '#e34651',
-						borderColor: '#e34651',
-						border:8
-					};
-					nodes.push(node);
-					drawNodes(node);
-				}
+		var count = 0;
+		for(n in nodes){
+			drawNodes(nodes[n], scaleX,scaleY);
+			drawNodeText(nodes[n]);
+			if(count == 13){
+				scaleY+=100;
+				scaleX = 100;
+				count = 0;
+			}
+			else
+			{
+				scaleX +=100;
+				count++;
 			}
 		}
-		else
-		{
-			for(n in nodes){
-				drawNodes(nodes[n]);
-			}
-		}
-		
+		socket.emit('add scale', nodes);
 	}
 	//resize canvas
 	function redrawCanvas() {
@@ -185,89 +221,107 @@ window.onload = function(){
 				height= window.innerHeight;
 				graph.canvas.width = width;
 				graph.canvas.height = height;
+				scaleX = 100;
+				scaleY = 100;
 
 				drawGrid();
 				drawGridNodes();
 	}
 	
-	//euclidean algorithm function
-	function euclidDistance(p1, p2){
-		return Math.sqrt(Math.pow(p2.x - p1.x,2) + Math.pow(p2.y-p1.y,2));
-	}
-
-	//highlight circle function
-	function highlightClickedCircle(index){
-		console.log(player.color);
-		var node;
-		if(selectedNode != undefined){
-			if(index != selectedNode.index){
-				node = {
-					x: nodes[index].x,
-					y: nodes[index].y,
-					radius: nodes[index].radius+(selectedNode.radius/2),
-					fillColor: player.color,
-					borderColor: player.color,
-					border: 8
-				};
-
-				selectedNode.radius = selectedNode.radius/2;
-
-				nodes[index] = node;
-				nodes[selectedNode.index] = selectedNode;
-
-				selectedNode = undefined;
-			}
-		}
-
-		else{
-			selectedNode = {
-				x: nodes[index].x,
-				y: nodes[index].y,
-				radius: nodes[index].radius,
-				fillColor: player.color,
-				borderColor: player.color,
-				border: 8,
-				index: index
-			};
-
-			nodes[index] = selectedNode;
-		}
+	// //animation function for node splitting
+	// function animate(prop, dist, duration){
+	// 	var start = new Date().getTime();
+	// 	var end = start + duration;
+	// 	var current = circle[prop];
+	// 	var goal = {};
 		
-		// nodes[index] = node;
-		redrawCanvas();
-	}
-	//check to see if click in a circle function
-	function checkInCircle(mouse){
-		var n = 0;
-		var hit = false;
-		while(!hit && n < nodes.length){
+	// 	if(dist[prop] < 0){
+	// 		goal[prop] = circle[prop]-dist;
+	// 	}
+	// 	else
+	// 	{
+	// 		goal[prop] = dist-circle[prop];
+	// 	}
+	
+	// 	drawNodes(circle, circle.x, circle.y);
 
-			var center = {
-				x: nodes[n].x,
-				y: nodes[n].y
-			};
+	// 	var step = function(){
+	// 		var timestamp = new Date().getTime();
+	// 		console.log(dist);
 
-			if(euclidDistance(mouse, center) < nodes[n].radius){
-				console.log('YAY!');
-				highlightClickedCircle(n);
-				hit = true;
-			}
-			else
-			{
-				n++;
-			}
-		}		
-	}
+	// 		//update value of property
+	// 		if(dist[prop] < 0)
+	// 		{
+	// 			circle[prop] -=1;
+	// 		}
+	// 		else if(dist[prop] > 0)
+	// 		{
+	// 			circle[prop] +=1;
+	// 		}
 
+	// 		if(circle[prop] != goal[prop]){
+	// 			requestAnimationFrame(step);
+	// 		}
+	// 	};
+
+	// 	return step();
+	// }
 //=================== GAME LOOP ================== //	
 	//draw grid for the first time
-function gameLoop(){
+	// function animLoop(){
+	// 		gameLoop();
+	// }
+	function gameLoop(){
+		redrawCanvas();
+	}
 
-	redrawCanvas();
-}
-	
 
-gameLoop();
+
+//=================== SOCKET.IO ================== //	
+socket.on('disconnect', function() {
+	stopGame();
+});
+socket.on('board update', function(grid) {
+    nodes = grid;
+    redrawCanvas();
+});
+
+socket.on('player list', function(users) {
+    // Received player list update
+    // TODO: do something with it
+
+    players = users;
+   	currentPlayer = players[players.length-1];
+	console.log(players);
+	$('#playerlist').empty();
+	for (var i = 0; i < players.length; i++) {
+		$('#playerlist').append($('<li>' + players[i].name + '</li>'));
+	}
+});
+
+// socket.on('distance', function(distance){
+
+// 	animate('x',distance,1000);
+// 	animate('y',distance,1000);
+// });
+
+socket.on('selectedNode', function(node){
+	selectedNode = node;
+	// circle = {
+	// 		x: selectedNode.x + selectedNode.scaleX,
+	// 		y: selectedNode.y + selectedNode.scaleY,
+	// 		scaleX: selectedNode.scaleX,
+	// 		scaleY: selectedNode.scaleY,
+	// 		borderColor: selectedNode.borderColor,
+	// 		fillColor: selectedNode.fillColor,
+	// 		radius: selectedNode.radius/2,
+	// 		border: 8
+	// };
+	// console.log('x: '+circle.x);
+	// console.log('y: '+circle.y);
+
+});
+
 
 //==================== end of window.onload	=======================//
 };
